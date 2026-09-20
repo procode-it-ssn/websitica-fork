@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { supabase } from "@/lib/client";
+import { whereLab } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { 
@@ -15,6 +16,8 @@ import {
 const schema = z.object({
   playerName: z.string().min(2, "Player name must be at least 2 characters"),
   teamName: z.string().min(2, "Team name must be at least 2 characters"),
+  // The select yields strings; the DB column is a smallint.
+  lab: z.enum(["1", "2"], { errorMap: () => ({ message: "Please select your lab" }) }),
 });
 
 export default function JoinGame({ lab = null }) {
@@ -36,7 +39,7 @@ export default function JoinGame({ lab = null }) {
     router.push("/waiting");
   };
 
-  const joinGame = async (playerName, teamName) => {
+  const joinGame = async (playerName, teamName, lab) => {
     // First check if team name already exists globally (across all labs)
     const { data: existingTeam, error: existingTeamError } = await supabase
       .from("teams")
@@ -49,12 +52,10 @@ export default function JoinGame({ lab = null }) {
       return;
     }
 
-    let { data: teamData, error: teamError } = await supabase
-      .from("teams")
-      .select("*")
-      .eq("name", teamName)
-      .eq("lab", lab)
-      .single();
+    let { data: teamData, error: teamError } = await whereLab(
+      supabase.from("teams").select("*").eq("name", teamName),
+      lab,
+    ).single();
 
     if (teamError && teamError.code === "PGRST116") {
       const { data, error } = await supabase
@@ -102,7 +103,7 @@ export default function JoinGame({ lab = null }) {
   };
 
   const onSubmit = (data) => {
-    joinGame(data.playerName, data.teamName);
+    joinGame(data.playerName, data.teamName, Number(data.lab));
   };
 
 
@@ -204,6 +205,24 @@ export default function JoinGame({ lab = null }) {
               {errors.teamName && (
                 <p className="text-industrial-fire text-sm mt-1 font-mechanical">
                   {errors.teamName.message}
+                </p>
+              )}
+            </div>
+            <div className="mb-4">
+              <select
+                {...register("lab")}
+                defaultValue={lab ?? ""}
+                className="border-2 border-industrial-steel px-4 p-3 w-full rounded-lg text-industrial-charcoal bg-industrial-steam/90 focus:outline-none focus:border-industrial-copper font-mechanical"
+              >
+                <option value="" disabled>
+                  Select your lab
+                </option>
+                <option value="1">Lab 1</option>
+                <option value="2">Lab 2</option>
+              </select>
+              {errors.lab && (
+                <p className="text-industrial-fire text-sm mt-1 font-mechanical">
+                  {errors.lab.message}
                 </p>
               )}
             </div>

@@ -9,7 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "./ui/button";
-import { cn } from "@/lib/utils";
+import { cn, whereLab } from "@/lib/utils";
 import IndustrialBackground from "./IndustrialBackground";
 
 const QUESTION_DURATION = 60; // 1 minute in seconds
@@ -90,11 +90,10 @@ export default function PlayerGame({ player, team, onGameEnd }) {
   }, [gameStatus, timeLeft]);
 
   const checkAndStartGame = async () => {
-    const { data: sessionData } = await supabase
-      .from("quiz_sessions")
-      .select("*")
-      .eq("status", "active")
-      .eq("lab", team.lab)
+    const { data: sessionData } = await whereLab(
+      supabase.from("quiz_sessions").select("*").eq("status", "active"),
+      team.lab,
+    )
       .order("start_time", { ascending: false })
       .limit(1)
       .single();
@@ -129,12 +128,10 @@ export default function PlayerGame({ player, team, onGameEnd }) {
 
     if (payload.new.status === "active") {
       // If an active session is updated or a new session becomes active
-      const { data: activeSession } = await supabase
-        .from("quiz_sessions")
-        .select("*")
-        .eq("id", payload.new.id)
-        .eq("lab", team.lab)
-        .single();
+      const { data: activeSession } = await whereLab(
+        supabase.from("quiz_sessions").select("*").eq("id", payload.new.id),
+        team.lab,
+      ).single();
 
       if (activeSession) {
         setCurrentSession(activeSession);
@@ -144,11 +141,10 @@ export default function PlayerGame({ player, team, onGameEnd }) {
       }
       } else if (payload.new.status === "completed") {
         // If any session is completed, check if it's the one we're currently playing
-        const { data: currentActiveSession } = await supabase
-          .from("quiz_sessions")
-          .select("*")
-          .eq("status", "active")
-          .eq("lab", team.lab)
+        const { data: currentActiveSession } = await whereLab(
+          supabase.from("quiz_sessions").select("*").eq("status", "active"),
+          team.lab,
+        )
           .order("start_time", { ascending: false })
           .limit(1)
           .single();      if (!currentActiveSession || currentActiveSession.id === payload.new.id) {

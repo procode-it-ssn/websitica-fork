@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import PlayerWaiting from "@/components/PlayerWaiting";
 import { supabase } from "@/lib/client";
+import { whereLab } from "@/lib/utils";
 
 export default function PlayerWaitingPage() {
   const [player, setPlayer] = useState(null);
@@ -12,11 +13,10 @@ export default function PlayerWaitingPage() {
   const router = useRouter();
 
   const checkSessionStatus = useCallback(async (playerId, teamData) => {
-    const { data: sessionData, error } = await supabase
-      .from("quiz_sessions")
-      .select("*")
-      .eq("status", "active")
-      .eq("lab", teamData.lab)
+    const { data: sessionData, error } = await whereLab(
+      supabase.from("quiz_sessions").select("*").eq("status", "active"),
+      teamData.lab,
+    )
       .order("start_time", { ascending: false })
       .limit(1)
       .single();
@@ -49,11 +49,10 @@ export default function PlayerWaitingPage() {
   }, [router]);
 
   const checkForUpcomingSession = async (teamData) => {
-    const { data, error } = await supabase
-      .from("quiz_sessions")
-      .select("*")
-      .eq("status", "scheduled")
-      .eq("lab", teamData.lab)
+    const { data, error } = await whereLab(
+      supabase.from("quiz_sessions").select("*").eq("status", "scheduled"),
+      teamData.lab,
+    )
       .order("start_time", { ascending: true })
       .limit(1)
       .single();

@@ -102,7 +102,7 @@ export default function Loader({ onLoadComplete }) {
           exit="exit"
         >
           <div className="absolute top-12 left-12">
-            <Image src={Logo} className="w-40 antialiased" alt="logo" />
+            <Image src={Logo} className="w-40 antialiased" alt="logo" priority />
           </div>
           <div className="text-lg absolute bottom-12 right-12 text-industrial-smoke">
             {status} {latency > 0 && `(${latency.toFixed(0)}ms)`}
