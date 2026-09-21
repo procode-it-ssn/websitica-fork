@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PlayerGame from "@/components/PlayerGame";
 import { Loader2 } from "lucide-react";
+import { IS_MOCK_MODE, DEFAULT_MOCK_PLAYER, DEFAULT_MOCK_TEAM } from "@/lib/mockData";
 
 export default function PlayerGamePage() {
   const [player, setPlayer] = useState(null);
@@ -10,15 +11,23 @@ export default function PlayerGamePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const playerData = JSON.parse(localStorage.getItem("playerData"));
-    const teamData = JSON.parse(localStorage.getItem("teamData"));
+    let playerData = JSON.parse(localStorage.getItem("playerData"));
+    let teamData = JSON.parse(localStorage.getItem("teamData"));
+
+    if ((!playerData || !teamData) && IS_MOCK_MODE) {
+      playerData = DEFAULT_MOCK_PLAYER;
+      teamData = DEFAULT_MOCK_TEAM;
+      localStorage.setItem("playerData", JSON.stringify(playerData));
+      localStorage.setItem("teamData", JSON.stringify(teamData));
+    }
+
     if (playerData && teamData) {
       setPlayer(playerData);
       setTeam(teamData);
     } else {
       router.push("/");
     }
-  }, []);
+  }, [router]);
 
   const handleGameEnd = () => {
     router.push("/waiting");
