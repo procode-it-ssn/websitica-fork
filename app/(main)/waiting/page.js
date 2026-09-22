@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import PlayerWaiting from "@/components/PlayerWaiting";
-import InventeBackground from "@/components/InventeBackground";
 import { supabase } from "@/lib/client";
 import { whereLab } from "@/lib/utils";
 import {
@@ -193,8 +192,7 @@ export default function PlayerWaitingPage() {
 
   if (!player || !team) {
     return (
-      <div key="loading" className="w-full min-h-[calc(100vh-120px)] flex items-center justify-center relative bg-[#FFF9F3] bg-grid overflow-hidden">
-        <InventeBackground />
+      <div key="loading" className="w-full min-h-[calc(100vh-120px)] flex items-center justify-center relative bg-transparent overflow-hidden">
         <div className="font-mono text-sm font-bold text-black/60 bg-white border-2 border-black px-4 py-2 shadow-[3px_3px_0px_#101010] relative z-10">
           Loading session standby...
         </div>

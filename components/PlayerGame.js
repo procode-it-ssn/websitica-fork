@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn, whereLab } from "@/lib/utils";
-import InventeBackground from "./InventeBackground";
 import {
   IS_MOCK_MODE,
   MOCK_SESSION,
@@ -488,8 +487,7 @@ export default function PlayerGame({ player, team, onGameEnd }) {
 
   if (gameStatus === "waiting") {
     return (
-      <div className="min-h-screen bg-[#FFF9F3] bg-grid flex items-center justify-center p-4">
-        <InventeBackground />
+      <div className="min-h-screen bg-transparent flex items-center justify-center p-4">
         <div className="card-brutal p-8 bg-white border-3 border-black shadow-brutal-lg max-w-md w-full flex flex-col items-center gap-4 text-center relative z-10">
           <Disc3 className="w-12 h-12 animate-spin text-[#FF6B35]" />
           <h3 className="font-syne font-black text-2xl uppercase tracking-tight text-black">
@@ -507,9 +505,7 @@ export default function PlayerGame({ player, team, onGameEnd }) {
   }
 
   return (
-    <div className="min-h-screen relative bg-[#FFF9F3] text-[#101010] bg-grid py-6 sm:py-8 px-3 sm:px-6 font-mono overflow-x-hidden">
-      <InventeBackground />
-
+    <div className="min-h-screen relative bg-transparent text-[#101010] py-6 sm:py-8 px-3 sm:px-6 font-mono overflow-x-hidden">
       <div className="max-w-5xl mx-auto relative z-10">
         {/* Top Header / Arena Info Bar */}
         <div className="card-brutal bg-white border-2 border-black shadow-brutal p-4 mb-6 flex flex-wrap items-center justify-between gap-4">

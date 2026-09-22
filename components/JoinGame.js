@@ -9,7 +9,6 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { IS_MOCK_MODE } from "@/lib/mockData";
-import InventeBackground from "./InventeBackground";
 
 const schema = z.object({
   playerName: z.string().min(2, "Contestant name must be at least 2 characters"),
@@ -204,44 +203,45 @@ export default function JoinGame({ lab = null }) {
     setAnimPhase("sealing");
     setInsertionProgress(0);
 
-    // Forward Step 2: Form physically folds & morphs into the vertical Cassette Tape
+    // Forward Step 2: Form physically folds & morphs into the vertical Cassette Tape (Smooth & slow)
     setTimeout(() => {
       setAnimPhase("morphing");
     }, 450);
 
-    // Forward Step 3: Reveal Vertical Player BELOW Tape & Align Tape directly above top slot
+    // Forward Step 3: Cassette is fully formed and complete! Sits clearly in view for 1.55s.
+    // Walkman Player rises from the bottom to meet it (3800ms -> 5100ms)
     setTimeout(() => {
       setAnimPhase("aligning");
       setInsertionProgress(0);
-    }, 2000);
+    }, 3800);
 
-    // Forward Step 4: Direct Vertical Insertion through Transparent Glass Window (0% → 100%)
+    // Forward Step 4: Direct Vertical Insertion through Transparent Glass Window (0% → 100%) (5100ms -> 7300ms)
     setTimeout(() => {
       setAnimPhase("inserting");
       setInsertionProgress(0);
-    }, 2900);
+    }, 5100);
 
-    // Synchronized progress steps
-    setTimeout(() => setInsertionProgress(25), 3350);
-    setTimeout(() => setInsertionProgress(50), 3850);
-    setTimeout(() => setInsertionProgress(75), 4350);
-    setTimeout(() => setInsertionProgress(100), 4900);
+    // Synchronized insertion progress steps
+    setTimeout(() => setInsertionProgress(25), 5650);
+    setTimeout(() => setInsertionProgress(50), 6200);
+    setTimeout(() => setInsertionProgress(75), 6750);
+    setTimeout(() => setInsertionProgress(100), 7300);
 
     // Forward Step 5: TRANSFORM & SHRINK ENTIRE PLAYER INTO THE 2D TAPE STRIP FIRST!
     setTimeout(() => {
       setAnimPhase("shrinking_player");
-    }, 5450);
+    }, 8000);
 
     // Forward Step 6: REMAINING WAITING ROOM ELEMENTS SMOOTHLY ADD AROUND IT IN ORIGINAL POSITION!
     setTimeout(() => {
       setAnimPhase("revealing_dashboard");
-    }, 6500);
+    }, 9200);
 
     // Forward Step 7: Fully settled in official waiting room layout
     setTimeout(() => {
       setAnimPhase("waiting");
       setIsSubmitting(false);
-    }, 7500);
+    }, 10300);
   };
 
   const onSubmit = (data) => {
@@ -255,42 +255,43 @@ export default function JoinGame({ lab = null }) {
   const handleEjectCassette = () => {
     setIsSubmitting(false);
 
-    // Reverse Step 1: Retract waiting room dashboard elements around the 2D tape strip
+    // Reverse Step 1: Retract waiting room dashboard elements around the 2D tape strip (0ms -> 650ms)
     setAnimPhase("retracting_dashboard");
 
-    // Reverse Step 2: Smoothly expand the 2D tape strip in place into the Walkman player!
+    // Reverse Step 2: Smoothly expand the 2D tape strip in place into the Walkman player! (650ms -> 1800ms)
     setTimeout(() => {
       setAnimPhase("expanding_player");
       setInsertionProgress(100);
-    }, 500);
+    }, 650);
 
-    // Reverse Step 3: Smoothly Eject the Tape UP and out of the player slot (100% -> 0%)!
+    // Reverse Step 3: Smoothly Eject the Tape UP and out of the player slot (100% -> 0%)! (1800ms -> 3600ms)
     setTimeout(() => {
       setAnimPhase("ejecting");
-    }, 1500);
+    }, 1800);
 
     // Synchronized reverse progress countdown
-    setTimeout(() => setInsertionProgress(75), 1850);
-    setTimeout(() => setInsertionProgress(50), 2250);
-    setTimeout(() => setInsertionProgress(25), 2650);
-    setTimeout(() => setInsertionProgress(0), 3050);
+    setTimeout(() => setInsertionProgress(75), 2250);
+    setTimeout(() => setInsertionProgress(50), 2700);
+    setTimeout(() => setInsertionProgress(25), 3150);
+    setTimeout(() => setInsertionProgress(0), 3600);
 
-    // Reverse Step 4: SHOW THE TAPE FIRST! Player recedes down, tape centers on screen alone
+    // Reverse Step 4: Player drops completely off-screen, tape sits still alone at center of screen! (3600ms -> 5900ms)
+    // 3600ms to 4500ms (0.9s): Player slides smoothly down and fades out off screen.
+    // 4500ms to 5900ms (1.40s): The cassette tape floats completely alone in the center of the screen!
     setTimeout(() => {
       setAnimPhase("showing_tape");
-    }, 3300);
+    }, 3600);
 
-    // Reverse Step 5: THEN the tape transforms back into the form!
-    // Dedicated viewing to clearly see their ejected tape first
+    // Reverse Step 5: After viewing the tape alone, it smoothly, subtly transforms into the form! (5900ms -> 8100ms, 2.2s duration!)
     setTimeout(() => {
       setAnimPhase("unmorphing");
-    }, 4600);
+    }, 5900);
 
     // Reverse Step 6: Fully settled back in interactive form state
     setTimeout(() => {
       setAnimPhase("form");
       setWaitingTime(0);
-    }, 5800);
+    }, 8100);
   };
 
   const handleStartGame = () => {
@@ -314,10 +315,10 @@ export default function JoinGame({ lab = null }) {
   const isShowingTape = animPhase === "showing_tape";
   const isUnmorphing = animPhase === "unmorphing";
 
-  // Component active groups:
   // Scene 1: Form / Morph / Unmorph
-  // Scene 2: Unified Walkman Player & Standby Waiting Lobby
-  const isFormStageActive = isFormMode || isSealing || isMorphing || isUnmorphing;
+  // Scene 2: Unified Walkman Player, Ejected Tape Alone, & Standby Waiting Lobby
+  const isFormStageActive =
+    isFormMode || isSealing || isMorphing || isUnmorphing;
   const isPlayerLobbyActive =
     isAligning ||
     isInserting ||
@@ -329,11 +330,11 @@ export default function JoinGame({ lab = null }) {
     isEjecting ||
     isShowingTape;
 
-  return (
-    <div className="w-full min-h-[calc(100vh-120px)] flex flex-col items-center justify-center relative bg-[#FFF9F3] bg-grid py-8 px-4 font-mono select-none overflow-hidden">
-      {/* Floating Retro Elements & Indexing Crosshairs */}
-      <InventeBackground />
+  const isDashboardVisible =
+    isRevealingDashboard || isWaiting || isRetractingDashboard;
 
+  return (
+    <div className="w-full min-h-[calc(100vh-120px)] flex flex-col items-center justify-center relative bg-transparent py-8 px-4 font-mono select-none overflow-hidden">
       <div className="w-full max-w-lg flex flex-col items-center relative z-10">
         {/* ======================================================== */}
         {/* TOP HEADER & TITLE (Matching media_1790005724810.png)    */}
@@ -341,13 +342,11 @@ export default function JoinGame({ lab = null }) {
         {/* ======================================================== */}
         <motion.div
           animate={
-            isFormMode || isSealing
-              ? { height: "auto", opacity: 1, y: 0, marginBottom: "16px" }
-              : isUnmorphing
-              ? { height: ["0px", "auto"], opacity: [0, 1], y: [-30, 0], marginBottom: ["0px", "16px"] }
-              : { height: 0, opacity: 0, y: -30, marginBottom: "0px" }
+            isFormMode || isSealing || isUnmorphing
+              ? { maxHeight: 220, opacity: 1, y: 0, marginBottom: "16px" }
+              : { maxHeight: 0, opacity: 0, y: -25, marginBottom: "0px" }
           }
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 2.0, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col items-center text-center overflow-hidden w-full"
         >
           {/* Institution & Department Eyebrow Badges */}
@@ -371,112 +370,7 @@ export default function JoinGame({ lab = null }) {
           </div>
         </motion.div>
 
-        {/* ======================================================== */}
-        {/* PHYSICAL STATUS HUD (Shows exact progression to user)   */}
-        {/* ======================================================== */}
-        <div className="h-8 mb-2 flex items-center justify-center">
-          {isSealing && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-[#FFD12E] text-black px-3 py-0.5 font-mono text-[11px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_#101010]"
-            >
-              🖨️ [1/5] PRINTING CONTESTANT DATA ONTO CASSETTE LABEL...
-            </motion.div>
-          )}
-          {isMorphing && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-black text-[#9AE885] px-3 py-0.5 font-mono text-[11px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_#9AE885]"
-            >
-              ⚙️ [2/5] FORM MORPHING INTO VERTICAL CASSETTE TAPE...
-            </motion.div>
-          )}
-          {isAligning && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-[#FF6B35] text-white px-3 py-0.5 font-mono text-[11px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_#101010]"
-            >
-              🔍 PLAYER READY BELOW TAPE // ALIGNING TOP SLOT...
-            </motion.div>
-          )}
-          {isInserting && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-[#FE90E9] text-black px-3 py-0.5 font-mono text-[11px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_#101010]"
-            >
-              📼 [3/5] INSERTING TAPE THROUGH GLASS ({insertionProgress}%) {insertionProgress === 100 ? "• [CLICK!]" : ""}
-            </motion.div>
-          )}
-          {isShrinkingPlayer && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-[#C1F8FF] text-black px-3 py-0.5 font-mono text-[11px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_#101010]"
-            >
-              📐 [4/5] TRANSFORMING PLAYER INTO 2D CASSETTE STRIP...
-            </motion.div>
-          )}
-          {(isRevealingDashboard || isWaiting) && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-[#9AE885] text-black px-3 py-0.5 font-mono text-[11px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_#101010]"
-            >
-              ✓ [5/5] STANDBY LOBBY READY • PUZZLE QUEUE ACTIVE
-            </motion.div>
-          )}
 
-          {/* Reverse Flow HUD Messages */}
-          {isRetractingDashboard && (
-            <motion.div
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-[#FF6B35] text-white px-3 py-0.5 font-mono text-[11px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_#101010]"
-            >
-              ↩️ [1/5] RETRACTING WAITING DASHBOARD...
-            </motion.div>
-          )}
-          {isExpandingPlayer && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-[#FFD12E] text-black px-3 py-0.5 font-mono text-[11px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_#101010]"
-            >
-              📐 [2/5] EXPANDING PLAYER FROM 2D CASSETTE STRIP...
-            </motion.div>
-          )}
-          {isEjecting && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-[#FE90E9] text-black px-3 py-0.5 font-mono text-[11px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_#101010]"
-            >
-              ⏏️ [3/5] EJECTING TAPE THROUGH GLASS ({insertionProgress}%)
-            </motion.div>
-          )}
-          {isShowingTape && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-[#C1F8FF] text-black px-3 py-0.5 font-mono text-[11px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_#101010]"
-            >
-              📼 [4/5] CASSETTE TAPE EJECTED • PREPARING TO UNFOLD...
-            </motion.div>
-          )}
-          {isUnmorphing && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-black text-[#9AE885] px-3 py-0.5 font-mono text-[11px] font-black uppercase border-2 border-black shadow-[2px_2px_0px_#9AE885]"
-            >
-              ⚙️ [5/5] CASSETTE UNFOLDING BACK INTO ONBOARDING FORM...
-            </motion.div>
-          )}
-        </div>
 
         {/* ======================================================== */}
         {/* STAGE CONTAINER: UNBROKEN CONTINUITY                     */}
@@ -485,44 +379,42 @@ export default function JoinGame({ lab = null }) {
 
           {/* ================================================================= */}
           {/* SCENE 1: FORM ↔ TAPE MORPH & UNMORPHING BACK TO FORM             */}
-          {/* (Active during form, sealing, morphing, unmorphing)               */}
+          {/* (Active during form, sealing, morphing, showing_tape, unmorphing) */}
           {/* ================================================================= */}
           {isFormStageActive && (
             <motion.div
               initial={
                 isUnmorphing
                   ? {
-                      width: "325px",
+                      width: "320px",
                       backgroundColor: "#1c1c1c",
                       borderRadius: "16px",
                       scale: 1,
                       y: 0,
-                      boxShadow: "0px 15px 30px rgba(0,0,0,0.35), 6px 6px 0px #101010",
+                      boxShadow: "6px 6px 0px #101010",
                     }
                   : false
               }
               animate={
                 isMorphing
                   ? {
-                      width: "325px",
+                      width: "320px",
                       backgroundColor: "#1c1c1c",
                       borderRadius: "16px",
                       scale: 1,
                       y: 0,
-                      boxShadow: "0px 15px 30px rgba(0,0,0,0.35), 6px 6px 0px #101010",
-                      transition: { duration: 0.6, ease: "easeInOut" },
+                      boxShadow: "6px 6px 0px #101010",
+                      transition: { duration: 1.8, ease: [0.22, 1, 0.36, 1] },
                     }
                   : isUnmorphing
                   ? {
-                      width: ["325px", "448px"],
-                      backgroundColor: ["#1c1c1c", "#ffffff"],
-                      borderRadius: ["16px", "0px"],
-                      scale: [1, 1.01, 1],
-                      boxShadow: [
-                        "0px 15px 30px rgba(0,0,0,0.35), 6px 6px 0px #101010",
-                        "8px 8px 0px #101010",
-                      ],
-                      transition: { duration: 1.0, ease: "easeInOut" },
+                      width: "448px",
+                      backgroundColor: "#ffffff",
+                      borderRadius: "0px",
+                      scale: 1,
+                      y: 0,
+                      boxShadow: "8px 8px 0px #101010",
+                      transition: { duration: 2.0, ease: [0.22, 1, 0.36, 1] },
                     }
                   : isSealing
                   ? {
@@ -547,74 +439,78 @@ export default function JoinGame({ lab = null }) {
             >
               {/* Corner Screws */}
               <motion.div
+                initial={isUnmorphing ? { opacity: 1, scale: 1, rotate: 90 } : false}
                 animate={
                   isMorphing
                     ? { opacity: 1, scale: 1, rotate: 90 }
                     : isUnmorphing
-                    ? { opacity: [1, 0], scale: [1, 0], rotate: [90, 0] }
+                    ? { opacity: 0, scale: 0, rotate: 0 }
                     : { opacity: 0, scale: 0 }
                 }
-                transition={{ duration: 0.4 }}
-                className="absolute top-2.5 left-2.5 w-3 h-3 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[9px] text-gray-300 font-mono font-black z-40 pointer-events-none"
+                transition={{ duration: 1.4, ease: "easeOut" }}
+                className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[8px] text-gray-300 font-mono font-black z-40 pointer-events-none"
               >
                 +
               </motion.div>
               <motion.div
+                initial={isUnmorphing ? { opacity: 1, scale: 1, rotate: 90 } : false}
                 animate={
                   isMorphing
                     ? { opacity: 1, scale: 1, rotate: 90 }
                     : isUnmorphing
-                    ? { opacity: [1, 0], scale: [1, 0], rotate: [90, 0] }
+                    ? { opacity: 0, scale: 0, rotate: 0 }
                     : { opacity: 0, scale: 0 }
                 }
-                transition={{ duration: 0.4 }}
-                className="absolute top-2.5 right-2.5 w-3 h-3 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[9px] text-gray-300 font-mono font-black z-40 pointer-events-none"
+                transition={{ duration: 1.4, ease: "easeOut" }}
+                className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[8px] text-gray-300 font-mono font-black z-40 pointer-events-none"
               >
                 +
               </motion.div>
               <motion.div
+                initial={isUnmorphing ? { opacity: 1, scale: 1, rotate: 90 } : false}
                 animate={
                   isMorphing
                     ? { opacity: 1, scale: 1, rotate: 90 }
                     : isUnmorphing
-                    ? { opacity: [1, 0], scale: [1, 0], rotate: [90, 0] }
+                    ? { opacity: 0, scale: 0, rotate: 0 }
                     : { opacity: 0, scale: 0 }
                 }
-                transition={{ duration: 0.4 }}
-                className="absolute bottom-2.5 left-2.5 w-3 h-3 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[9px] text-gray-300 font-mono font-black z-40 pointer-events-none"
+                transition={{ duration: 1.4, ease: "easeOut" }}
+                className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[8px] text-gray-300 font-mono font-black z-40 pointer-events-none"
               >
                 +
               </motion.div>
               <motion.div
+                initial={isUnmorphing ? { opacity: 1, scale: 1, rotate: 90 } : false}
                 animate={
                   isMorphing
                     ? { opacity: 1, scale: 1, rotate: 90 }
                     : isUnmorphing
-                    ? { opacity: [1, 0], scale: [1, 0], rotate: [90, 0] }
+                    ? { opacity: 0, scale: 0, rotate: 0 }
                     : { opacity: 0, scale: 0 }
                 }
-                transition={{ duration: 0.4 }}
-                className="absolute bottom-2.5 right-2.5 w-3 h-3 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[9px] text-gray-300 font-mono font-black z-40 pointer-events-none"
+                transition={{ duration: 1.4, ease: "easeOut" }}
+                className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[8px] text-gray-300 font-mono font-black z-40 pointer-events-none"
               >
                 +
               </motion.div>
 
               {/* Header Bar of the Form / Cassette Top Ridge */}
-              <div className="bg-[#181818] text-white px-4 py-2.5 border-b-2 border-black flex items-center justify-between font-mono text-xs font-bold relative z-20">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#E53E3E] animate-pulse" />
+              <div className="bg-[#181818] text-white px-3.5 py-1.5 border-b-2 border-black flex items-center justify-between font-mono text-[11px] font-bold relative z-20">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#E53E3E] animate-pulse" />
                   <span className="tracking-wider text-gray-200">[REC 01 // SIDE A]</span>
                 </div>
 
                 <motion.span
+                  initial={isUnmorphing ? { backgroundColor: "#FFD12E", scale: 0.95 } : false}
                   animate={
                     isMorphing
                       ? { backgroundColor: "#FFD12E", scale: 0.95 }
-                      : isUnmorphing
-                      ? { backgroundColor: ["#FFD12E", "#FE90E9"], scale: [0.95, 1] }
                       : { backgroundColor: "#FE90E9", scale: 1 }
                   }
-                  className="text-black text-[10px] font-mono font-black px-2 py-0.5 border border-black uppercase"
+                  transition={{ duration: 1.4, ease: "easeInOut" }}
+                  className="text-black text-[9px] font-mono font-black px-1.5 py-0.5 border border-black uppercase"
                 >
                   {isMorphing
                     ? `LAB ${selectedLab || 1} • CASSETTE`
@@ -623,23 +519,45 @@ export default function JoinGame({ lab = null }) {
               </div>
 
               {/* Body Content of Form / Cassette Body */}
-              <div className="p-4 sm:p-5 font-mono relative z-20">
+              <motion.div
+                initial={isUnmorphing ? { padding: "10px" } : false}
+                animate={
+                  isMorphing
+                    ? { padding: "10px" }
+                    : { padding: "16px" }
+                }
+                transition={{ duration: 1.6, ease: "easeInOut" }}
+                className="font-mono relative z-20"
+              >
                 {/* THE CASSETTE LABEL STICKER */}
                 <motion.div
+                  initial={
+                    isUnmorphing
+                      ? {
+                          backgroundColor: "#FFFDF0",
+                          borderColor: "#101010",
+                          borderWidth: "2px",
+                          padding: "8px",
+                          borderRadius: "4px",
+                        }
+                      : false
+                  }
                   animate={
                     isMorphing
                       ? {
                           backgroundColor: "#FFFDF0",
                           borderColor: "#101010",
                           borderWidth: "2px",
-                          padding: "10px",
+                          padding: "8px",
                           borderRadius: "4px",
                         }
                       : isUnmorphing
                       ? {
-                          backgroundColor: ["#FFFDF0", "transparent"],
-                          borderWidth: ["2px", "0px"],
-                          padding: ["10px", "0px"],
+                          backgroundColor: "rgba(255,253,240,0)",
+                          borderColor: "rgba(16,16,16,0)",
+                          borderWidth: "0px",
+                          padding: "0px",
+                          borderRadius: "0px",
                         }
                       : {
                           backgroundColor: "transparent",
@@ -647,52 +565,57 @@ export default function JoinGame({ lab = null }) {
                           padding: "0px",
                         }
                   }
-                  transition={{ duration: 0.5 }}
+                  transition={{ duration: 1.8, ease: "easeInOut" }}
                   className="border-black relative overflow-hidden"
                 >
                   {/* Cassette Label Header Stripe */}
                   <motion.div
+                    initial={isUnmorphing ? { height: 18, opacity: 1, marginBottom: 6 } : false}
                     animate={
                       isMorphing
-                        ? { height: "auto", opacity: 1, marginBottom: 8 }
-                        : isUnmorphing
-                        ? { height: ["auto", 0], opacity: [1, 0], marginBottom: [8, 0] }
+                        ? { height: 18, opacity: 1, marginBottom: 6 }
                         : { height: 0, opacity: 0, marginBottom: 0 }
                     }
-                    className="overflow-hidden flex justify-between items-center border-b-2 border-black pb-1 text-[10px] font-black"
+                    transition={{ duration: 1.4, ease: "easeInOut" }}
+                    className="overflow-hidden flex justify-between items-center border-b-2 border-black pb-0.5 text-[9px] font-black"
                   >
-                    <div className="flex items-center gap-1.5">
-                      <span className="bg-[#FF6B35] text-white px-1.5 py-0.5 border border-black">SIDE A</span>
-                      <span className="text-black uppercase">TYPE I // 60 MIN SP</span>
+                    <div className="flex items-center gap-1">
+                      <span className="bg-[#FF6B35] text-white px-1 py-0.5 border border-black text-[8px]">SIDE A</span>
+                      <span className="text-black uppercase text-[8px]">TYPE I // 60 MIN SP</span>
                     </div>
-                    <span className="bg-[#9AE885] border border-black px-1.5 py-0.5 uppercase">
+                    <span className="bg-[#9AE885] border border-black px-1 py-0.5 uppercase text-[8px]">
                       RECORDING VERIFIED
                     </span>
                   </motion.div>
 
                   {/* CONTESTANT NAME FIELD */}
-                  <div className="mb-3">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-black">
+                  <div className={isMorphing ? "mb-1.5" : "mb-3"}>
+                    <label className={`block font-bold uppercase tracking-wider text-black ${
+                      isMorphing ? "text-[9px] mb-0.5" : "text-[11px] mb-1"
+                    }`}>
                       {isMorphing ? "A 1: CONTESTANT" : "CONTESTANT NAME"}
                     </label>
-                    {isFormMode || isUnmorphing ? (
+                    <div className="relative">
                       <input
                         {...register("playerName")}
                         placeholder="e.g. Alan Turing"
-                        disabled={isSubmitting}
-                        className="w-full border-2 border-black bg-[#FFFDF9] px-3 py-2 font-mono text-sm font-bold text-black placeholder:text-gray-400 focus:bg-[#FFF9A6] focus:outline-none transition-colors"
+                        disabled={isSubmitting || isUnmorphing}
+                        className={`w-full border-2 border-black bg-[#FFFDF9] px-3 py-2 font-mono text-sm font-bold text-black placeholder:text-gray-400 focus:bg-[#FFF9A6] focus:outline-none transition-opacity duration-700 ${
+                          isFormMode
+                            ? "opacity-100 pointer-events-auto"
+                            : isUnmorphing
+                            ? "opacity-100 pointer-events-none"
+                            : "opacity-0 pointer-events-none absolute inset-0"
+                        }`}
                         autoComplete="off"
                       />
-                    ) : (
-                      <motion.div
-                        initial={{ opacity: 0.8 }}
-                        animate={{ opacity: 1 }}
-                        className="border-b-2 border-black/50 pb-0.5 text-black font-black uppercase text-sm tracking-tight truncate bg-yellow-50/70 px-2 py-1 font-mono flex items-center justify-between"
-                      >
-                        <span>{watchedPlayer || "ALAN TURING"}</span>
-                        <span className="text-[9px] text-gray-500 font-bold">[PRINTED]</span>
-                      </motion.div>
-                    )}
+                      {isMorphing && (
+                        <div className="border-b border-black/40 pb-0.5 text-black font-black uppercase text-xs tracking-tight truncate flex items-center justify-between">
+                          <span>{watchedPlayer || "ALAN TURING"}</span>
+                          <span className="text-[8px] text-gray-500 font-bold">[PRINTED]</span>
+                        </div>
+                      )}
+                    </div>
                     {errors.playerName && isFormMode && (
                       <p className="text-[#E53E3E] text-xs font-bold mt-1">
                         ⚠️ {errors.playerName.message}
@@ -701,28 +624,33 @@ export default function JoinGame({ lab = null }) {
                   </div>
 
                   {/* TEAM NAME FIELD */}
-                  <div className="mb-2">
-                    <label className="block text-[11px] font-bold uppercase tracking-wider mb-1 text-black">
+                  <div className={isMorphing ? "mb-1.5" : "mb-2"}>
+                    <label className={`block font-bold uppercase tracking-wider text-black ${
+                      isMorphing ? "text-[9px] mb-0.5" : "text-[11px] mb-1"
+                    }`}>
                       {isMorphing ? "A 2: TEAM SQUAD" : "TEAM NAME"}
                     </label>
-                    {isFormMode || isUnmorphing ? (
+                    <div className="relative">
                       <input
                         {...register("teamName")}
                         placeholder="e.g. Binary Beasts"
-                        disabled={isSubmitting}
-                        className="w-full border-2 border-black bg-[#FFFDF9] px-3 py-2 font-mono text-sm font-bold text-black placeholder:text-gray-400 focus:bg-[#FFF9A6] focus:outline-none transition-colors"
+                        disabled={isSubmitting || isUnmorphing}
+                        className={`w-full border-2 border-black bg-[#FFFDF9] px-3 py-2 font-mono text-sm font-bold text-black placeholder:text-gray-400 focus:bg-[#FFF9A6] focus:outline-none transition-opacity duration-700 ${
+                          isFormMode
+                            ? "opacity-100 pointer-events-auto"
+                            : isUnmorphing
+                            ? "opacity-100 pointer-events-none"
+                            : "opacity-0 pointer-events-none absolute inset-0"
+                        }`}
                         autoComplete="off"
                       />
-                    ) : (
-                      <motion.div
-                        initial={{ opacity: 0.8 }}
-                        animate={{ opacity: 1 }}
-                        className="border-b-2 border-black/50 pb-0.5 text-black font-black uppercase text-sm tracking-tight truncate bg-yellow-50/70 px-2 py-1 font-mono flex items-center justify-between"
-                      >
-                        <span>{watchedTeam || "BINARY BEASTS"}</span>
-                        <span className="text-[9px] text-gray-500 font-bold">[PRINTED]</span>
-                      </motion.div>
-                    )}
+                      {isMorphing && (
+                        <div className="border-b border-black/40 pb-0.5 text-black font-black uppercase text-xs tracking-tight truncate flex items-center justify-between">
+                          <span>{watchedTeam || "BINARY BEASTS"}</span>
+                          <span className="text-[8px] text-gray-500 font-bold">[PRINTED]</span>
+                        </div>
+                      )}
+                    </div>
                     {errors.teamName && isFormMode && (
                       <p className="text-[#E53E3E] text-xs font-bold mt-1">
                         ⚠️ {errors.teamName.message}
@@ -732,46 +660,46 @@ export default function JoinGame({ lab = null }) {
 
                   {/* CENTER TAPE WINDOW WITH ROTATING SPOOLS */}
                   <motion.div
+                    initial={isUnmorphing ? { height: 44, opacity: 1, marginTop: 4 } : false}
                     animate={
                       isMorphing
-                        ? { height: 58, opacity: 1, marginTop: 8 }
-                        : isUnmorphing
-                        ? { height: ["58px", "0px"], opacity: [1, 0], marginTop: [8, 0] }
+                        ? { height: 44, opacity: 1, marginTop: 4 }
                         : { height: 0, opacity: 0, marginTop: 0 }
                     }
-                    transition={{ duration: 0.6, ease: "easeInOut" }}
-                    className="w-full bg-black/15 border-2 border-black relative flex items-center justify-between px-4 overflow-hidden rounded-xs"
+                    transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+                    className="w-full bg-black/15 border-2 border-black relative flex items-center justify-between px-3 overflow-hidden rounded-xs mt-1"
                   >
-                    <div className="absolute inset-x-6 h-3 bg-[#3B1F0E] border-y border-black/70 z-0 opacity-95" />
+                    <div className="absolute inset-x-5 h-2 bg-[#3B1F0E] border-y border-black/70 z-0 opacity-95" />
 
                     <div className="relative z-10">
-                      <CassetteReel size={36} duration={2.6} isSpinning={isMorphing} />
+                      <CassetteReel size={32} duration={2.6} isSpinning={isMorphing} />
                     </div>
 
-                    <div className="relative z-10 flex flex-col items-center bg-white/85 border border-black px-2 py-0.5">
-                      <span className="text-[8px] font-mono font-black text-[#FF6B35]">[TAPE 60]</span>
-                      <div className="w-12 h-1.5 bg-black/20 border border-black my-0.5 flex items-center">
+                    <div className="relative z-10 flex flex-col items-center bg-white/90 border border-black px-1.5 py-0.5">
+                      <span className="text-[7px] font-mono font-black text-[#FF6B35]">[TAPE 60]</span>
+                      <div className="w-10 h-1 bg-black/20 border border-black my-0.5 flex items-center">
                         <div className="h-full bg-black/80 w-3/5" />
                       </div>
-                      <span className="text-[7px] font-mono font-bold text-black/70">100 • 50 • 0</span>
+                      <span className="text-[6px] font-mono font-bold text-black/70">100 • 50 • 0</span>
                     </div>
 
                     <div className="relative z-10">
-                      <CassetteReel size={36} duration={2.6} isSpinning={isMorphing} />
+                      <CassetteReel size={32} duration={2.6} isSpinning={isMorphing} />
                     </div>
                   </motion.div>
                 </motion.div>
 
                 {/* FORM CONTROLS (LAB & SUBMIT) */}
                 <motion.div
+                  initial={isUnmorphing ? { maxHeight: 0, opacity: 0, overflow: "hidden", marginTop: 0 } : false}
                   animate={
                     isMorphing
-                      ? { height: 0, opacity: 0, overflow: "hidden", marginTop: 0 }
+                      ? { maxHeight: 0, opacity: 0, overflow: "hidden", marginTop: 0 }
                       : isUnmorphing
-                      ? { height: ["0px", "auto"], opacity: [0, 1], marginTop: [0, 14] }
-                      : { height: "auto", opacity: 1, marginTop: 14 }
+                      ? { maxHeight: 280, opacity: 1, overflow: "hidden", marginTop: 14 }
+                      : { maxHeight: 280, opacity: 1, marginTop: 14 }
                   }
-                  transition={{ duration: 0.5 }}
+                  transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
                   className="space-y-4"
                 >
                   <div>
@@ -835,13 +763,13 @@ export default function JoinGame({ lab = null }) {
 
                 {/* Form Footer Strip */}
                 <motion.div
+                  initial={isUnmorphing ? { maxHeight: 0, opacity: 0, marginTop: 0 } : false}
                   animate={
                     isMorphing
-                      ? { height: 0, opacity: 0, marginTop: 0 }
-                      : isUnmorphing
-                      ? { height: ["0px", "auto"], opacity: [0, 1], marginTop: [0, 16] }
-                      : { height: "auto", opacity: 1, marginTop: 16 }
+                      ? { maxHeight: 0, opacity: 0, marginTop: 0 }
+                      : { maxHeight: 40, opacity: 1, marginTop: 16 }
                   }
+                  transition={{ duration: 1.6, ease: "easeInOut" }}
                   className="border-t-2 border-dashed border-gray-300 pt-2 flex items-center justify-between text-[10px] font-mono font-bold text-gray-500 uppercase overflow-hidden"
                 >
                   <span>[FORMAT: 4X4 GRID]</span>
@@ -850,20 +778,20 @@ export default function JoinGame({ lab = null }) {
 
                 {/* Bottom Trapezoid Head Notch */}
                 <motion.div
+                  initial={isUnmorphing ? { height: 15, opacity: 1, marginTop: 4 } : false}
                   animate={
                     isMorphing
-                      ? { height: 24, opacity: 1, marginTop: 8 }
-                      : isUnmorphing
-                      ? { height: ["24px", "0px"], opacity: [1, 0], marginTop: [8, 0] }
+                      ? { height: 15, opacity: 1, marginTop: 4 }
                       : { height: 0, opacity: 0, marginTop: 0 }
                   }
-                  className="mx-auto w-40 bg-[#121212] border-t-2 border-x-2 border-black flex items-center justify-around px-4 overflow-hidden rounded-t-xs"
+                  transition={{ duration: 1.4, ease: "easeOut" }}
+                  className="mx-auto w-32 bg-[#121212] border-t-2 border-x-2 border-black flex items-center justify-around px-3 overflow-hidden rounded-t-xs mt-1"
                 >
-                  <div className="w-2 h-2 rounded-full bg-black border border-gray-500" />
-                  <div className="w-8 h-1.5 bg-[#3B1F0E] border border-black" />
-                  <div className="w-2 h-2 rounded-full bg-black border border-gray-500" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-black border border-gray-500" />
+                  <div className="w-6 h-1 bg-[#3B1F0E] border border-black" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-black border border-gray-500" />
                 </motion.div>
-              </div>
+              </motion.div>
             </motion.div>
           )}
 
@@ -879,7 +807,11 @@ export default function JoinGame({ lab = null }) {
               initial={{ opacity: 1 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
-              className="w-full flex flex-col items-center relative py-1"
+              className={
+                isShowingTape
+                  ? "absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none py-1"
+                  : "w-full flex flex-col items-center relative py-1"
+              }
             >
               {/* 
                 THE WAITING ROOM DASHBOARD CARD CONTAINER:
@@ -889,6 +821,7 @@ export default function JoinGame({ lab = null }) {
                   Smoothly forms the official white neo-brutalist card around the player!
               */}
               <motion.div
+                initial={false}
                 animate={
                   isWaiting
                     ? {
@@ -924,69 +857,69 @@ export default function JoinGame({ lab = null }) {
                     : {
                         backgroundColor: "rgba(255,255,255,0)",
                         borderWidth: "0px",
-                        borderColor: "#000000",
+                        borderColor: "transparent",
                         boxShadow: "0px 0px 0px rgba(0,0,0,0)",
                         padding: "0px",
                         scale: 1,
                         opacity: 1,
                       }
                 }
-                className="w-full max-w-lg border-black relative z-30 font-mono flex flex-col items-center"
+                className="w-full max-w-lg relative z-30 font-mono flex flex-col items-center"
               >
                 {/* ----------------------------------------------------------- */}
                 {/* 1. TOP DASHBOARD ELEMENTS (Header tags & Contestant Banner) */}
                 {/* ----------------------------------------------------------- */}
-                <motion.div
-                  animate={
-                    isWaiting
-                      ? { height: "auto", opacity: 1, y: 0 }
-                      : isRevealingDashboard
-                      ? { height: ["0px", "auto"], opacity: [0, 1], y: [-20, 0] }
-                      : isRetractingDashboard
-                      ? { height: ["auto", "0px"], opacity: [1, 0], y: [0, -20] }
-                      : { height: 0, opacity: 0, y: -20 }
-                  }
-                  transition={{ duration: 0.55, ease: "easeOut" }}
-                  className="w-full overflow-hidden flex flex-col"
-                >
-                  {/* Top Standby Header Tags */}
-                  <div className="flex justify-between items-center border-b-2 border-black pb-3 mb-5 text-xs font-bold w-full">
-                    <span className="bg-[#FFD12E] border-2 border-black px-2.5 py-0.5 shadow-[2px_2px_0px_#101010] text-black">
-                      STANDBY • LAB {activeTeam?.lab || selectedLab || 1}
-                    </span>
-                    <span className="text-black/80 font-bold uppercase tracking-wider text-[11px]">
-                      WEBSITICA // CODECTIONS
-                    </span>
-                    <span className="bg-[#9AE885] border-2 border-black px-2.5 py-0.5 shadow-[2px_2px_0px_#101010] text-black">
-                      INVENTE ’26
-                    </span>
-                  </div>
+                {isDashboardVisible && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0, y: -20 }}
+                    animate={
+                      isRetractingDashboard
+                        ? { height: 0, opacity: 0, y: -20 }
+                        : { height: "auto", opacity: 1, y: 0 }
+                    }
+                    transition={{ duration: 0.55, ease: "easeOut" }}
+                    className="w-full overflow-hidden flex flex-col"
+                  >
+                    {/* Top Standby Header Tags */}
+                    <div className="flex justify-between items-center border-b-2 border-black pb-3 mb-5 text-xs font-bold w-full">
+                      <span className="bg-[#FFD12E] border-2 border-black px-2.5 py-0.5 shadow-[2px_2px_0px_#101010] text-black">
+                        STANDBY • LAB {activeTeam?.lab || selectedLab || 1}
+                      </span>
+                      <span className="text-black/80 font-bold uppercase tracking-wider text-[11px]">
+                        WEBSITICA // CODECTIONS
+                      </span>
+                      <span className="bg-[#9AE885] border-2 border-black px-2.5 py-0.5 shadow-[2px_2px_0px_#101010] text-black">
+                        INVENTE ’26
+                      </span>
+                    </div>
 
-                  {/* Contestant & Team Banner */}
-                  <div className="border-2 border-black bg-white p-4 mb-5 shadow-[3px_3px_0px_#101010] flex items-center justify-between w-full">
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                        CONTESTANT
-                      </p>
-                      <p className="font-syne text-xl font-bold text-black uppercase mt-0.5">
-                        {activePlayer?.name || watchedPlayer || "CONTESTANT"}
-                      </p>
+                    {/* Contestant & Team Banner */}
+                    <div className="border-2 border-black bg-white p-4 mb-5 shadow-[3px_3px_0px_#101010] flex items-center justify-between w-full">
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                          CONTESTANT
+                        </p>
+                        <p className="font-syne text-xl font-bold text-black uppercase mt-0.5">
+                          {activePlayer?.name || watchedPlayer || "CONTESTANT"}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                          TEAM SQUAD
+                        </p>
+                        <p className="text-xs font-black text-black bg-[#C1F8FF] border border-black px-2.5 py-1 shadow-[2px_2px_0px_#101010] uppercase inline-block mt-0.5">
+                          {activeTeam?.name || watchedTeam || "TEAM"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                        TEAM SQUAD
-                      </p>
-                      <p className="text-xs font-black text-black bg-[#C1F8FF] border border-black px-2.5 py-1 shadow-[2px_2px_0px_#101010] uppercase inline-block mt-0.5">
-                        {activeTeam?.name || watchedTeam || "TEAM"}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                )}
 
                 {/* ----------------------------------------------------------- */}
                 {/* 2. CENTER SECTION: DASHED WELL ENCLOSING THE PLAYER UNIT     */}
                 {/* ----------------------------------------------------------- */}
                 <motion.div
+                  initial={false}
                   animate={
                     isWaiting
                       ? {
@@ -1038,6 +971,20 @@ export default function JoinGame({ lab = null }) {
                     - In showing_tape: Casing drops away, tape rests centered at y: 0!
                   */}
                   <motion.div
+                    initial={
+                      isAligning
+                        ? {
+                            width: "360px",
+                            height: "340px",
+                            backgroundColor: "#181a1e",
+                            borderRadius: "16px",
+                            borderWidth: "3px",
+                            boxShadow: "8px 8px 0px #101010",
+                            opacity: 1,
+                            y: 360,
+                          }
+                        : false
+                    }
                     animate={
                       isShrinkingPlayer
                         ? {
@@ -1074,15 +1021,53 @@ export default function JoinGame({ lab = null }) {
                             y: 0,
                             transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
                           }
+                        : isAligning
+                        ? {
+                            width: "360px",
+                            height: "340px",
+                            backgroundColor: "#181a1e",
+                            borderRadius: "16px",
+                            borderWidth: "3px",
+                            boxShadow: "8px 8px 0px #101010",
+                            opacity: 1,
+                            y: [360, 165],
+                            transition: { duration: 1.3, ease: [0.16, 1, 0.3, 1] },
+                          }
+                        : isInserting
+                        ? {
+                            width: "360px",
+                            height: "340px",
+                            backgroundColor: "#181a1e",
+                            borderRadius: "16px",
+                            borderWidth: "3px",
+                            boxShadow: "8px 8px 0px #101010",
+                            opacity: 1,
+                            y: [165, 0],
+                            transition: { duration: 2.2, ease: [0.22, 1, 0.36, 1] },
+                          }
+                        : isEjecting
+                        ? {
+                            width: "360px",
+                            height: "340px",
+                            backgroundColor: "#181a1e",
+                            borderRadius: "16px",
+                            borderWidth: "3px",
+                            boxShadow: "8px 8px 0px #101010",
+                            opacity: 1,
+                            y: [0, 165],
+                            transition: { duration: 1.8, ease: [0.25, 0.1, 0.25, 1] },
+                          }
                         : isShowingTape
                         ? {
                             width: "360px",
                             height: "340px",
                             backgroundColor: "transparent",
+                            borderRadius: "16px",
                             borderWidth: "0px",
                             boxShadow: "none",
                             opacity: 1,
-                            y: 0,
+                            y: [165, 850],
+                            transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
                           }
                         : {
                             width: "360px",
@@ -1123,10 +1108,8 @@ export default function JoinGame({ lab = null }) {
                         {/* LAYER 1: REAR PLAYER CAVITY (Behind the moving tape) */}
                         <motion.div
                           animate={
-                            isAligning
-                              ? { y: [160, 0], opacity: [0, 1] }
-                              : isShowingTape
-                              ? { y: [0, 160], opacity: [1, 0] }
+                            isShowingTape
+                              ? { y: 0, opacity: [1, 0] }
                               : { y: 0, opacity: 1 }
                           }
                           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -1154,156 +1137,152 @@ export default function JoinGame({ lab = null }) {
                           </div>
                         </motion.div>
 
-                        {/* LAYER 2: THE CASSETTE TAPE (GLIDES VERTICALLY IN / OUT) */}
+                        {/* LAYER 2: THE CASSETTE TAPE (GLIDES VERTICALLY IN / OUT - CONTINUOUS!) */}
                         <motion.div
+                          initial={isAligning ? { y: -360, opacity: 1 } : false}
                           animate={
                             isAligning
                               ? {
-                                  y: [0, -170],
+                                  // Stationary on screen: local [-360, -165] exactly offsets player [360, 165] = net 0!
+                                  y: [-360, -165],
                                   opacity: 1,
-                                  transition: { duration: 0.85, ease: [0.16, 1, 0.3, 1] },
+                                  transition: { duration: 1.3, ease: [0.16, 1, 0.3, 1] },
                                 }
                               : isInserting
                               ? {
-                                  // Forward Insertion: 0% -> 25% -> 50% -> 75% -> 100% with tactile settling rebound
-                                  y: [-170, -105, -40, 20, 52, 56, 51, 52],
+                                  // Forward Insertion: Tape glides down through transparent glass into cavity
+                                  y: [-165, -95, -30, 25, 52, 55, 51, 52],
                                   transition: {
                                     duration: 2.2,
-                                    times: [0, 0.22, 0.45, 0.7, 0.9, 0.94, 0.97, 1],
+                                    times: [0, 0.25, 0.5, 0.75, 0.9, 0.94, 0.97, 1],
                                     ease: "easeInOut",
                                   },
                                 }
                               : isEjecting
                               ? {
-                                  // Reverse Ejection: Symmetrical glide UP out of slot (100% -> 0%)!
-                                  y: [52, 48, 20, -40, -105, -170],
+                                  // Reverse Ejection: Symmetrical smooth glide UP out of slot (100% -> 0%)
+                                  y: [52, -165],
                                   transition: {
-                                    duration: 1.7,
-                                    times: [0, 0.1, 0.35, 0.6, 0.85, 1],
-                                    ease: "easeInOut",
+                                    duration: 1.8,
+                                    ease: [0.25, 0.1, 0.25, 1],
                                   },
                                 }
                               : isShowingTape
                               ? {
-                                  // SHOW THE TAPE FIRST! Glides down from top slot to center y: 0 alone!
-                                  y: [-170, -75, 0],
+                                  // Counteracts player [165 -> 850] drop: [-165 -> -850] = net 0 stationary on screen!
+                                  y: [-165, -850],
                                   opacity: 1,
-                                  transition: {
-                                    duration: 0.9,
-                                    ease: [0.16, 1, 0.3, 1],
-                                  },
+                                  transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
                                 }
                               : { y: 52, opacity: 1 }
                           }
-                          className="w-[325px] border-3 border-black bg-[#1c1c1c] rounded-2xl absolute left-[17.5px] z-10 shadow-[6px_6px_0px_#101010] overflow-hidden"
+                          className="w-[320px] border-3 border-black bg-[#1c1c1c] rounded-2xl absolute left-[20px] top-0 z-10 shadow-[6px_6px_0px_#101010] overflow-hidden"
                         >
-                          {/* 4 Corner Screws */}
-                          <div className="absolute top-2.5 left-2.5 w-3 h-3 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[9px] text-gray-300 font-mono font-black z-40 pointer-events-none">
-                            +
-                          </div>
-                          <div className="absolute top-2.5 right-2.5 w-3 h-3 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[9px] text-gray-300 font-mono font-black z-40 pointer-events-none">
-                            +
-                          </div>
-                          <div className="absolute bottom-2.5 left-2.5 w-3 h-3 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[9px] text-gray-300 font-mono font-black z-40 pointer-events-none">
-                            +
-                          </div>
-                          <div className="absolute bottom-2.5 right-2.5 w-3 h-3 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[9px] text-gray-300 font-mono font-black z-40 pointer-events-none">
-                            +
-                          </div>
-
-                          {/* Top Black Bar */}
-                          <div className="bg-[#181818] text-white px-4 py-2 border-b-2 border-black flex items-center justify-between font-mono text-xs font-bold relative z-20">
-                            <div className="flex items-center gap-2">
-                              <span className="w-2.5 h-2.5 rounded-full bg-[#E53E3E] animate-pulse" />
-                              <span className="tracking-wider text-gray-200">[REC 01 // SIDE A]</span>
+                            {/* 4 Corner Screws */}
+                            <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[8px] text-gray-300 font-mono font-black z-40 pointer-events-none">
+                              +
                             </div>
-                            <span className="text-black text-[10px] font-mono font-black px-2 py-0.5 border border-black uppercase bg-[#FFD12E]">
-                              LAB {selectedLab || 1} • CASSETTE
-                            </span>
-                          </div>
+                            <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[8px] text-gray-300 font-mono font-black z-40 pointer-events-none">
+                              +
+                            </div>
+                            <div className="absolute bottom-2 left-2 w-2.5 h-2.5 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[8px] text-gray-300 font-mono font-black z-40 pointer-events-none">
+                              +
+                            </div>
+                            <div className="absolute bottom-2 right-2 w-2.5 h-2.5 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[8px] text-gray-300 font-mono font-black z-40 pointer-events-none">
+                              +
+                            </div>
 
-                          {/* Cassette Body / Cream Sticker Label */}
-                          <div className="p-3 font-mono relative z-20">
-                            <div className="bg-[#FFFDF0] border-2 border-black p-2 rounded-xs">
-                              {/* Label Header Stripe */}
-                              <div className="flex justify-between items-center border-b-2 border-black pb-1 mb-1.5 text-[10px] font-black">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="bg-[#FF6B35] text-white px-1.5 py-0.5 border border-black text-[9px]">SIDE A</span>
-                                  <span className="text-black uppercase text-[9px]">TYPE I // 60 MIN SP</span>
-                                </div>
-                                <span className="bg-[#9AE885] border border-black px-1.5 py-0.5 uppercase text-[9px]">
-                                  RECORDING VERIFIED
-                                </span>
+                            {/* Top Black Bar */}
+                            <div className="bg-[#181818] text-white px-3 py-1.5 border-b-2 border-black flex items-center justify-between font-mono text-[11px] font-bold relative z-20">
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-[#E53E3E] animate-pulse" />
+                                <span className="tracking-wider text-gray-200">[REC 01 // SIDE A]</span>
                               </div>
+                              <span className="text-black text-[9px] font-mono font-black px-1.5 py-0.5 border border-black uppercase bg-[#FFD12E]">
+                                LAB {selectedLab || 1} • CASSETTE
+                              </span>
+                            </div>
 
-                              {/* Contestant Line */}
-                              <div className="mb-1.5">
-                                <div className="text-[10px] font-bold uppercase tracking-wider text-black">
-                                  A 1: CONTESTANT
-                                </div>
-                                <div className="border-b-2 border-black/40 pb-0.5 text-black font-black uppercase text-sm tracking-tight truncate flex items-center justify-between">
-                                  <span>{watchedPlayer || "KISHOR"}</span>
-                                  <span className="text-[9px] text-gray-500 font-bold">[PRINTED]</span>
-                                </div>
-                              </div>
-
-                              {/* Team Squad Line */}
-                              <div className="mb-1.5">
-                                <div className="text-[10px] font-bold uppercase tracking-wider text-black">
-                                  A 2: TEAM SQUAD
-                                </div>
-                                <div className="border-b-2 border-black/40 pb-0.5 text-black font-black uppercase text-sm tracking-tight truncate flex items-center justify-between">
-                                  <span>{watchedTeam || "TEAM"}</span>
-                                  <span className="text-[9px] text-gray-500 font-bold">[PRINTED]</span>
-                                </div>
-                              </div>
-
-                              {/* Center Tape Window with Concentric Spools */}
-                              <div className="w-full bg-black/15 border-2 border-black relative flex items-center justify-between px-3 py-1 overflow-hidden rounded-xs mt-1.5">
-                                <div className="absolute inset-x-5 h-2.5 bg-[#3B1F0E] border-y border-black/70 z-0 opacity-95" />
-
-                                <div className="relative z-10">
-                                  <CassetteReel
-                                    size={32}
-                                    duration={2.6}
-                                    isSpinning={insertionProgress >= 75 && !isEjecting && !isShowingTape}
-                                  />
-                                </div>
-
-                                <div className="relative z-10 flex flex-col items-center bg-white/90 border border-black px-2 py-0.5">
-                                  <span className="text-[8px] font-mono font-black text-[#FF6B35]">[TAPE 60]</span>
-                                  <div className="w-12 h-1.5 bg-black/20 border border-black my-0.5 flex items-center">
-                                    <div className="h-full bg-black/80 w-3/5" />
+                            {/* Cassette Body / Cream Sticker Label */}
+                            <div className="p-2.5 font-mono relative z-20">
+                              <div className="bg-[#FFFDF0] border-2 border-black p-2 rounded-xs">
+                                {/* Label Header Stripe */}
+                                <div className="flex justify-between items-center border-b-2 border-black pb-0.5 mb-1.5 text-[9px] font-black">
+                                  <div className="flex items-center gap-1">
+                                    <span className="bg-[#FF6B35] text-white px-1 py-0.5 border border-black text-[8px]">SIDE A</span>
+                                    <span className="text-black uppercase text-[8px]">TYPE I // 60 MIN SP</span>
                                   </div>
-                                  <span className="text-[7px] font-mono font-bold text-black/70">100 • 50 • 0</span>
+                                  <span className="bg-[#9AE885] border border-black px-1 py-0.5 uppercase text-[8px]">
+                                    RECORDING VERIFIED
+                                  </span>
                                 </div>
 
-                                <div className="relative z-10">
-                                  <CassetteReel
-                                    size={32}
-                                    duration={2.6}
-                                    isSpinning={insertionProgress >= 75 && !isEjecting && !isShowingTape}
-                                  />
+                                {/* Contestant Line */}
+                                <div className="mb-1.5">
+                                  <div className="text-[9px] font-bold uppercase tracking-wider mb-0.5 text-black">
+                                    A 1: CONTESTANT
+                                  </div>
+                                  <div className="border-b border-black/40 pb-0.5 text-black font-black uppercase text-xs tracking-tight truncate flex items-center justify-between">
+                                    <span>{watchedPlayer || "ALAN TURING"}</span>
+                                    <span className="text-[8px] text-gray-500 font-bold">[PRINTED]</span>
+                                  </div>
+                                </div>
+
+                                {/* Team Squad Line */}
+                                <div className="mb-1.5">
+                                  <div className="text-[9px] font-bold uppercase tracking-wider mb-0.5 text-black">
+                                    A 2: TEAM SQUAD
+                                  </div>
+                                  <div className="border-b border-black/40 pb-0.5 text-black font-black uppercase text-xs tracking-tight truncate flex items-center justify-between">
+                                    <span>{watchedTeam || "BINARY BEASTS"}</span>
+                                    <span className="text-[8px] text-gray-500 font-bold">[PRINTED]</span>
+                                  </div>
+                                </div>
+
+                                {/* Center Tape Window with Concentric Spools */}
+                                <div className="w-full h-[44px] bg-black/15 border-2 border-black relative flex items-center justify-between px-3 overflow-hidden rounded-xs mt-1">
+                                  <div className="absolute inset-x-5 h-2 bg-[#3B1F0E] border-y border-black/70 z-0 opacity-95" />
+
+                                  <div className="relative z-10">
+                                    <CassetteReel
+                                      size={32}
+                                      duration={2.6}
+                                      isSpinning={insertionProgress >= 75 && !isEjecting && !isShowingTape}
+                                    />
+                                  </div>
+
+                                  <div className="relative z-10 flex flex-col items-center bg-white/90 border border-black px-1.5 py-0.5">
+                                    <span className="text-[7px] font-mono font-black text-[#FF6B35]">[TAPE 60]</span>
+                                    <div className="w-10 h-1 bg-black/20 border border-black my-0.5 flex items-center">
+                                      <div className="h-full bg-black/80 w-3/5" />
+                                    </div>
+                                    <span className="text-[6px] font-mono font-bold text-black/70">100 • 50 • 0</span>
+                                  </div>
+
+                                  <div className="relative z-10">
+                                    <CassetteReel
+                                      size={32}
+                                      duration={2.6}
+                                      isSpinning={insertionProgress >= 75 && !isEjecting && !isShowingTape}
+                                    />
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            {/* Bottom Head Notch */}
-                            <div className="mx-auto w-32 h-4 bg-[#121212] border-t-2 border-x-2 border-black flex items-center justify-around px-3 overflow-hidden rounded-t-xs mt-1.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-black border border-gray-500" />
-                              <div className="w-7 h-1 bg-[#3B1F0E] border border-black" />
-                              <div className="w-1.5 h-1.5 rounded-full bg-black border border-gray-500" />
+                              {/* Bottom Head Notch */}
+                              <div className="mx-auto w-32 h-[15px] bg-[#121212] border-t-2 border-x-2 border-black flex items-center justify-around px-3 overflow-hidden rounded-t-xs mt-1">
+                                <div className="w-1.5 h-1.5 rounded-full bg-black border border-gray-500" />
+                                <div className="w-6 h-1 bg-[#3B1F0E] border border-black" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-black border border-gray-500" />
+                              </div>
                             </div>
-                          </div>
-                        </motion.div>
+                          </motion.div>
 
                         {/* LAYER 3: FRONT FACEPLATE & TRANSPARENT GLASS WINDOW (z-20) */}
                         <motion.div
                           animate={
-                            isAligning
-                              ? { y: [160, 0], opacity: [0, 1] }
-                              : isShowingTape
-                              ? { y: [0, 160], opacity: [1, 0] }
+                            isShowingTape
+                              ? { y: 0, opacity: [1, 0] }
                               : { y: 0, opacity: 1 }
                           }
                           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -1449,62 +1428,60 @@ export default function JoinGame({ lab = null }) {
                   </motion.div>
 
                   {/* Dashed Well Subtitle & Queue Timer Pill */}
-                  <motion.div
-                    animate={
-                      isWaiting
-                        ? { height: "auto", opacity: 1, y: 0 }
-                        : isRevealingDashboard
-                        ? { height: ["0px", "auto"], opacity: [0, 1], y: [15, 0] }
-                        : isRetractingDashboard
-                        ? { height: ["auto", "0px"], opacity: [1, 0], y: [0, 15] }
-                        : { height: 0, opacity: 0, y: 15 }
-                    }
-                    transition={{ duration: 0.55, ease: "easeOut" }}
-                    className="w-full flex flex-col items-center overflow-hidden mt-3"
-                  >
-                    <h2 className="font-syne text-2xl sm:text-3xl font-black text-black tracking-tight uppercase mt-1">
-                      WARMING UP TAPE...
-                    </h2>
-                    <p className="text-xs font-semibold text-gray-600 mt-1 max-w-xs">
-                      The puzzle arena will open automatically when the round begins.
-                    </p>
-                    <div className="mt-4 border-2 border-black bg-[#FE90E9] px-4 py-1 font-mono text-xs sm:text-sm font-bold shadow-[2px_2px_0px_#101010] text-black">
-                      QUEUE TIMER: {Math.floor(waitingTime / 60)}:{(waitingTime % 60).toString().padStart(2, "0")}
-                    </div>
-                  </motion.div>
+                  {isDashboardVisible && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0, y: 15 }}
+                      animate={
+                        isRetractingDashboard
+                          ? { height: 0, opacity: 0, y: 15 }
+                          : { height: "auto", opacity: 1, y: 0 }
+                      }
+                      transition={{ duration: 0.55, ease: "easeOut" }}
+                      className="w-full flex flex-col items-center overflow-hidden mt-3"
+                    >
+                      <h2 className="font-syne text-2xl sm:text-3xl font-black text-black tracking-tight uppercase mt-1">
+                        WARMING UP TAPE...
+                      </h2>
+                      <p className="text-xs font-semibold text-gray-600 mt-1 max-w-xs">
+                        The puzzle arena will open automatically when the round begins.
+                      </p>
+                      <div className="mt-4 border-2 border-black bg-[#FE90E9] px-4 py-1 font-mono text-xs sm:text-sm font-bold shadow-[2px_2px_0px_#101010] text-black">
+                        QUEUE TIMER: {Math.floor(waitingTime / 60)}:{(waitingTime % 60).toString().padStart(2, "0")}
+                      </div>
+                    </motion.div>
+                  )}
                 </motion.div>
 
                 {/* ----------------------------------------------------------- */}
                 {/* 3. BOTTOM ACTION BUTTONS                                    */}
                 {/* ----------------------------------------------------------- */}
-                <motion.div
-                  animate={
-                    isWaiting
-                      ? { height: "auto", opacity: 1, y: 0 }
-                      : isRevealingDashboard
-                      ? { height: ["0px", "auto"], opacity: [0, 1], y: [20, 0] }
-                      : isRetractingDashboard
-                      ? { height: ["auto", "0px"], opacity: [1, 0], y: [0, 20] }
-                      : { height: 0, opacity: 0, y: 20 }
-                  }
-                  transition={{ duration: 0.55, ease: "easeOut" }}
-                  className="w-full overflow-hidden space-y-3"
-                >
-                  <button
-                    onClick={handleStartGame}
-                    className="w-full bg-[#FFD12E] hover:bg-[#FFDA58] text-black font-syne font-black text-base py-3 px-4 border-2 border-black shadow-[4px_4px_0px_#101010] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_#101010] transition-all uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
+                {isDashboardVisible && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0, y: 20 }}
+                    animate={
+                      isRetractingDashboard
+                        ? { height: 0, opacity: 0, y: 20 }
+                        : { height: "auto", opacity: 1, y: 0 }
+                    }
+                    transition={{ duration: 0.55, ease: "easeOut" }}
+                    className="w-full overflow-hidden space-y-3"
                   >
-                    <span>▶ ENTER GAME ARENA ▶</span>
-                  </button>
+                    <button
+                      onClick={handleStartGame}
+                      className="w-full bg-[#FFD12E] hover:bg-[#FFDA58] text-black font-syne font-black text-base py-3 px-4 border-2 border-black shadow-[4px_4px_0px_#101010] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_#101010] transition-all uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>▶ ENTER GAME ARENA ▶</span>
+                    </button>
 
-                  <button
-                    onClick={handleEjectCassette}
-                    className="w-full bg-white hover:bg-gray-50 text-black font-mono text-xs font-bold py-2.5 px-4 border-2 border-black shadow-[3px_3px_0px_#101010] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#101010] transition-all uppercase flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>EJECT CASSETTE / CHANGE DETAILS</span>
-                  </button>
-                </motion.div>
+                    <button
+                      onClick={handleEjectCassette}
+                      className="w-full bg-white hover:bg-gray-50 text-black font-mono text-xs font-bold py-2.5 px-4 border-2 border-black shadow-[3px_3px_0px_#101010] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#101010] transition-all uppercase flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>EJECT CASSETTE / CHANGE DETAILS</span>
+                    </button>
+                  </motion.div>
+                )}
               </motion.div>
             </motion.div>
           )}

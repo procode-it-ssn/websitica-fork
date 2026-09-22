@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import InventeBackground from "./InventeBackground";
 
 function CassetteReel({ size = 44, duration = 2.8, reverse = false }) {
   return (
@@ -89,9 +88,7 @@ export default function PlayerWaiting({
   }, []);
 
   return (
-    <div className="w-full min-h-[calc(100vh-120px)] py-10 sm:py-16 px-4 flex flex-col items-center justify-center relative bg-[#FFF9F3] bg-grid overflow-hidden">
-      <InventeBackground />
-
+    <div className="w-full min-h-[calc(100vh-120px)] py-10 sm:py-16 px-4 flex flex-col items-center justify-center relative bg-transparent overflow-hidden">
       <motion.div
         initial={false}
         animate={{ opacity: 1, scale: 1 }}
