@@ -3,12 +3,13 @@
 import { Toaster } from "@/components/ui/sonner";
 import { usePathname } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
+import { LoadingProvider } from "./LoadingContext";
 
 export default function Providers({ children }) {
   const pathname = usePathname();
 
   return (
-    <>
+    <LoadingProvider>
       <AnimatePresence
         mode="wait"
         initial={true}
@@ -21,6 +22,6 @@ export default function Providers({ children }) {
         <div key={pathname}>{children}</div>
       </AnimatePresence>
       <Toaster richColors closeButton />
-    </>
+    </LoadingProvider>
   );
 }

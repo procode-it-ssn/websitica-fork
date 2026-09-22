@@ -1,7 +1,7 @@
 import "./../globals.css";
 
 export const metadata = {
-  title: "INVENTE '26 // Admin Dashboard",
+  title: "Websitica Admin | Invente '26",
   description: "Websitica - Codections Admin Control Center",
   icons: {
     icon: "/invente/invente-orange.webp",

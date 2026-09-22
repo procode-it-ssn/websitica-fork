@@ -366,7 +366,7 @@ export default function JoinGame({ lab = null }) {
 
           {/* Subtitle Yellow Banner */}
           <div className="mt-1.5 bg-[#FFD12E] border-2 border-black px-3 sm:px-4 py-1 font-mono font-bold text-xs uppercase shadow-[3px_3px_0px_#101010] text-black tracking-wide">
-            A GIANT LEAP, OUT OF THE BOX // 4 GROUPS OF 4 WORDS
+            A GIANT LEAP, OUT OF THE BOX • 4 GROUPS OF 4 WORDS
           </div>
         </motion.div>
 
@@ -499,7 +499,7 @@ export default function JoinGame({ lab = null }) {
               <div className="bg-[#181818] text-white px-3.5 py-1.5 border-b-2 border-black flex items-center justify-between font-mono text-[11px] font-bold relative z-20">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-[#E53E3E] animate-pulse" />
-                  <span className="tracking-wider text-gray-200">[REC 01 // SIDE A]</span>
+                  <span className="tracking-wider text-gray-200">[REC 01 • SIDE A]</span>
                 </div>
 
                 <motion.span
@@ -886,7 +886,7 @@ export default function JoinGame({ lab = null }) {
                         STANDBY • LAB {activeTeam?.lab || selectedLab || 1}
                       </span>
                       <span className="text-black/80 font-bold uppercase tracking-wider text-[11px]">
-                        WEBSITICA // CODECTIONS
+                        WEBSITICA • CODECTIONS
                       </span>
                       <span className="bg-[#9AE885] border-2 border-black px-2.5 py-0.5 shadow-[2px_2px_0px_#101010] text-black">
                         INVENTE ’26

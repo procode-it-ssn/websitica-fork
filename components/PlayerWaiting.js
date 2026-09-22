@@ -101,7 +101,7 @@ export default function PlayerWaiting({
             STANDBY • LAB {team.lab || 1}
           </span>
           <span className="text-black/70 uppercase">
-            WEBSITICA // CODECTIONS
+            WEBSITICA • CODECTIONS
           </span>
           <span className="bg-[#9AE885] border border-black px-2.5 py-0.5 shadow-[2px_2px_0px_#101010]">
             INVENTE ’26

@@ -19,7 +19,7 @@ const RING_PATH =
 
 export default function InventeBackground() {
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 select-none">
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 select-none opacity-45 saturate-[0.85] transition-all duration-500">
 
       {/* ──────────────────────────────────────────────────────
           LEFT FLANK (TOP): Cyan VHS Tape (vhs-6, #C1F8FF)
