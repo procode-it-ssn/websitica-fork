@@ -1,15 +1,14 @@
 "use client";
 import { motion } from "framer-motion";
-import Image from "next/image";
 
 /* ─────────────────────────────────────────────────────────────────────────────
    InventeBackground
    Authentic technical fest decorative elements from SSN-SNUC Invente '26:
    - Hero rotating circular smiley ball with "Out Think. Out Build. Out Shine."
      placed prominently and fully visible inside the screen (upper right).
-   - Neo-brutalist VHS tape bars properly placed along left and right edges,
-     animated with smooth organic floating levitation effects.
-   - Retro festival collage stickers (yellow cross, cyan burst, pink star).
+   - 10 beautifully composed neo-brutalist stickers floating smoothly across
+     the perimeter margins (left and right flanks) without colliding or
+     overlapping with the central form, game board, or navigation bar.
    - Monospace indexing crosshairs.
 ───────────────────────────────────────────────────────────────────────────── */
 
@@ -19,89 +18,11 @@ const RING_PATH =
 
 export default function InventeBackground() {
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 select-none opacity-45 saturate-[0.85] transition-all duration-500">
-
-      {/* ──────────────────────────────────────────────────────
-          LEFT FLANK (TOP): Cyan VHS Tape (vhs-6, #C1F8FF)
-          Brought into the screen with crisp rotation and float
-         ────────────────────────────────────────────────────── */}
-      <motion.div
-        className="absolute hidden xl:block z-0"
-        style={{
-          top: "84px",
-          left: "clamp(12px, 2.2vw, 36px)",
-        }}
-        animate={{
-          y: [0, 15, 0],
-          rotate: [-7, -3, -7],
-          x: [0, 3, 0],
-        }}
-        transition={{
-          duration: 8.5,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-      >
-        <div className="relative transform hover:scale-105 transition-transform duration-300">
-          <Image
-            src="/invente/vhs-6.svg"
-            alt="Invente VHS Cyan"
-            aria-hidden="true"
-            width={124}
-            height={566}
-            priority
-            style={{
-              filter: "drop-shadow(4px 6px 0px rgba(16,16,16,0.92))",
-            }}
-            className="w-[110px] xl:w-[124px] h-auto select-none opacity-95"
-          />
-        </div>
-      </motion.div>
-
-      {/* ──────────────────────────────────────────────────────
-          LEFT FLANK (MID/BOTTOM): Pink VHS Tape (vhs-2, #FE90E9)
-          Hero pink cassette standing proudly on the left edge
-         ────────────────────────────────────────────────────── */}
-      <motion.div
-        className="absolute hidden lg:block z-10"
-        style={{
-          top: "clamp(240px, 32vh, 360px)",
-          left: "clamp(18px, 3vw, 54px)",
-        }}
-        animate={{
-          y: [0, -18, 0],
-          rotate: [6, 2, 6],
-          x: [0, -3, 0],
-        }}
-        transition={{
-          duration: 7.2,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 0.5,
-        }}
-      >
-        <div className="relative transform hover:scale-105 transition-transform duration-300">
-          <Image
-            src="/invente/vhs-2.svg"
-            alt="Invente VHS Pink"
-            aria-hidden="true"
-            width={124}
-            height={450}
-            priority
-            style={{
-              filter: "drop-shadow(5px 6px 0px rgba(16,16,16,0.92))",
-            }}
-            className="w-[115px] xl:w-[134px] h-auto select-none opacity-95"
-          />
-        </div>
-      </motion.div>
+    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 select-none opacity-85 transition-all duration-500">
 
       {/* ──────────────────────────────────────────────────────
           TOP-RIGHT: Invente '26 Rotating Smiley Badge
-          Unified concentric SVG centered at (0, 0):
-          - Yellow smile face in center with clean 3D offset shadow
-          - Single, razor-sharp rotating text ring with zero duplicate shadow
-          - Smooth floating levitation animation
+          Concentric SVG with rotating text ring
          ────────────────────────────────────────────────────── */}
       <motion.div
         className="absolute hidden sm:block z-20"
@@ -177,7 +98,7 @@ export default function InventeBackground() {
               </g>
             </g>
 
-            {/* 3. RING: Single, crisp rotating text ring (no duplicate shadow) */}
+            {/* 3. RING: Rotating text ring */}
             <g>
               <animateTransform
                 attributeName="transform"
@@ -195,76 +116,38 @@ export default function InventeBackground() {
         </div>
       </motion.div>
 
-      {/* ──────────────────────────────────────────────────────
-          RIGHT FLANK (MID/BOTTOM): Lime Green VHS Tape (vhs-3, #9AE885)
-          Brought into the screen with bold star sticker & barcode
-         ────────────────────────────────────────────────────── */}
-      <motion.div
-        className="absolute hidden lg:block z-10"
-        style={{
-          top: "clamp(250px, 34vh, 380px)",
-          right: "clamp(18px, 3vw, 54px)",
-        }}
-        animate={{
-          y: [0, -17, 0],
-          rotate: [-5, -1, -5],
-          x: [0, 4, 0],
-        }}
-        transition={{
-          duration: 7.9,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 1.1,
-        }}
-      >
-        <div className="relative transform hover:scale-105 transition-transform duration-300">
-          <Image
-            src="/invente/vhs-3.svg"
-            alt="Invente VHS Lime"
-            aria-hidden="true"
-            width={124}
-            height={566}
-            priority
-            style={{
-              filter: "drop-shadow(5px 6px 0px rgba(16,16,16,0.92))",
-            }}
-            className="w-[115px] xl:w-[134px] h-auto select-none opacity-95"
-          />
-        </div>
-      </motion.div>
-
       {/* ══════════════════════════════════════════════════════════
-          COLLECTION OF 10 PURPOSEFULLY COMPOSED NEO-BRUTALIST STICKERS
-          Each sticker is intentionally anchored to layout features:
-          - Tape Spines (Stickers 1, 2, 3, 7)
-          - Inward Action Pointers (Sticker 4)
-          - Smiley Hero Companion Sparkle (Sticker 6)
-          - Outer Flank Energy Zap (Sticker 5)
-          - HUD Frame & Index Tag Accents (Stickers 8, 9, 10)
+          10 FLOATING NEO-BRUTALIST STICKERS
+          Strategically positioned in the perimeter margins:
+          - 5 stickers down the LEFT flank
+          - 5 stickers down the RIGHT flank
+          - Bounded organic floating paths to eliminate any collision or
+            overlap with the central form, header, or game dashboard.
          ══════════════════════════════════════════════════════════ */}
 
-      {/* ── STICKER 1: Cyan 6-Arm Asterisk Burst ─────────────────
-          Anchored: Adhered to top-right shoulder of Cyan VHS Tape (vhs-6)
-          Animation: Continuous slow clockwise 360° spin + vertical float
+      {/* ── [LEFT 1] STICKER 1: Cyan 6-Arm Asterisk Burst ───────
+          Top-Left corner flank
          ────────────────────────────────────────────────────── */}
       <motion.div
-        className="absolute hidden xl:block z-20 pointer-events-none"
+        className="absolute hidden lg:block z-10 pointer-events-none"
         style={{
-          top: "68px",
-          left: "clamp(90px, 8.5vw, 138px)",
+          top: "clamp(84px, 12vh, 120px)",
+          left: "clamp(24px, 3.5vw, 65px)",
         }}
         animate={{
-          y: [0, -10, 0],
-          rotate: [0, 360],
+          x: [0, 14, -8, 0],
+          y: [0, -16, 8, 0],
+          rotate: [0, 180, 360],
         }}
         transition={{
-          y: { duration: 6, repeat: Infinity, ease: "easeInOut" },
-          rotate: { duration: 18, repeat: Infinity, ease: "linear" },
+          x: { duration: 12, repeat: Infinity, ease: "easeInOut" },
+          y: { duration: 9, repeat: Infinity, ease: "easeInOut" },
+          rotate: { duration: 22, repeat: Infinity, ease: "linear" },
         }}
       >
         <svg
           viewBox="795 142 120 112"
-          className="w-10 h-10 xl:w-11 xl:h-11 drop-shadow-[2px_3px_0px_#101010]"
+          className="w-10 h-10 xl:w-11 xl:h-11 drop-shadow-[3px_3px_0px_#101010]"
           aria-hidden="true"
         >
           <path
@@ -280,123 +163,37 @@ export default function InventeBackground() {
         </svg>
       </motion.div>
 
-      {/* ── STICKER 2: Yellow 4-Petal Rounded Cross ──────────────
-          Anchored: Adhered to top shoulder of Lime VHS Tape (vhs-3)
-          Animation: Pendulum hanging sway / rocking angle (-16° to +16°)
+      {/* ── [LEFT 2] STICKER 4: Lime 3D Techno Arrow ────────────
+          Upper-Mid Left flank
          ────────────────────────────────────────────────────── */}
       <motion.div
-        className="absolute hidden xl:block z-20 pointer-events-none"
+        className="absolute hidden lg:block z-10 pointer-events-none"
         style={{
-          top: "clamp(220px, 28vh, 290px)",
-          right: "clamp(105px, 9.5vw, 155px)",
-          transformOrigin: "top center",
+          top: "clamp(240px, 30vh, 290px)",
+          left: "clamp(36px, 5.5vw, 90px)",
         }}
         animate={{
-          y: [0, 12, 0],
-          x: [-5, 5, -5],
-          rotate: [-16, 16, -16],
+          x: [0, -12, 10, 0],
+          y: [0, 16, -12, 0],
+          rotate: [-12, 8, -14, -12],
+          scale: [1, 1.05, 0.98, 1],
         }}
         transition={{
-          duration: 5.4,
+          duration: 9.5,
           repeat: Infinity,
           ease: "easeInOut",
-        }}
-      >
-        <svg
-          viewBox="628 464 96 96"
-          className="w-10 h-10 xl:w-11 xl:h-11 drop-shadow-[2px_3px_0px_#101010]"
-          aria-hidden="true"
-        >
-          <path
-            d="M711.403 479.865C701.195 470.566 678.542 492.92 678.542 492.92C678.542 492.92 653.526 470.149 643.88 480.766C634.441 491.156 657.385 514.077 657.385 514.077C657.385 514.077 635.095 537.406 644.78 547.389C654.58 557.491 678.542 534.785 678.542 534.785C678.542 534.785 701.54 556.962 711.403 547.389C721.43 537.658 698.349 514.077 698.349 514.077C698.349 514.077 721.975 489.496 711.403 479.865Z"
-            fill="black"
-            stroke="black"
-          />
-          <path
-            d="M707.802 476.264C697.594 466.965 674.94 489.318 674.94 489.318C674.94 489.318 649.924 466.547 640.278 477.164C630.839 487.554 653.783 510.476 653.783 510.476C653.783 510.476 631.494 533.804 641.179 543.788C650.978 553.889 674.94 531.183 674.94 531.183C674.94 531.183 697.938 553.36 707.802 543.788C717.829 534.057 694.747 510.476 694.747 510.476C694.747 510.476 718.374 485.894 707.802 476.264Z"
-            fill="#FFD12E"
-            stroke="black"
-          />
-        </svg>
-      </motion.div>
-
-      {/* ── STICKER 3: Pink 12-Point Fest Star Badge ─────────────
-          Anchored: Base label quality seal of Pink VHS Tape (vhs-2)
-          Animation: Dynamic breathing pulse scale bloom + tilt
-         ────────────────────────────────────────────────────── */}
-      <motion.div
-        className="absolute hidden lg:block z-20 pointer-events-none"
-        style={{
-          top: "clamp(510px, 63vh, 650px)",
-          left: "clamp(85px, 8.2vw, 135px)",
-        }}
-        animate={{
-          scale: [1, 1.16, 0.96, 1],
-          rotate: [0, 8, -4, 0],
-          y: [0, -12, 0],
-        }}
-        transition={{
-          duration: 5.2,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 0.4,
-        }}
-      >
-        <svg
-          viewBox="970 716 76 56"
-          className="w-11 h-11 xl:w-12 xl:h-12 drop-shadow-[2px_3px_0px_#101010]"
-          aria-hidden="true"
-        >
-          {/* Black offset 3D shadow */}
-          <path
-            d="M1007.92 718.806L1012.05 734.03L1027.24 722.79L1018.99 737.164L1040.44 733.477L1022.43 742.438L1043.3 747.475L1021.25 748.177L1034.94 760.338L1015.84 752.559L1017.99 767.983L1007.92 754.193L997.845 767.983L999.993 752.559L980.899 760.338L994.584 748.177L972.531 747.475L993.409 742.438L975.398 733.477L996.84 737.164L988.589 722.79L1003.79 734.03L1007.92 718.806Z"
-            fill="black"
-          />
-          {/* Pink Front Badge */}
-          <path
-            d="M1006.4 716.355L1010.5 731.5L1025.7 720.2L1017.5 734.5L1038.9 730.8L1020.9 739.8L1041.8 744.8L1019.7 745.5L1033.4 757.7L1014.3 749.9L1016.4 765.3L1006.4 751.5L996.3 765.3L998.5 749.9L979.4 757.7L993.1 745.5L971 744.8L991.9 739.8L973.9 730.8L995.3 734.5L987.1 720.2L1002.3 731.5L1006.4 716.355Z"
-            fill="#FE90E9"
-            stroke="black"
-            strokeWidth="1.8"
-          />
-        </svg>
-      </motion.div>
-
-      {/* ── STICKER 4: Lime 3D Techno Arrow ──────────────────────
-          Anchored: Between Cyan & Pink tapes, pointing inward to central card
-          Animation: Snappy directional bounce with squash & stretch
-         ────────────────────────────────────────────────────── */}
-      <motion.div
-        className="absolute hidden md:block z-20 pointer-events-none"
-        style={{
-          top: "clamp(225px, 29vh, 280px)",
-          left: "clamp(115px, 10vw, 160px)",
-        }}
-        animate={{
-          y: [0, -18, 3, 0],
-          scaleY: [1, 1.08, 0.94, 1],
-          scaleX: [1, 0.94, 1.05, 1],
-          rotate: [-12, -18, -8, -12],
-        }}
-        transition={{
-          duration: 3.8,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 0.8,
         }}
       >
         <svg
           viewBox="0 0 64 64"
-          className="w-10 h-10 xl:w-11 xl:h-11 drop-shadow-[2px_3px_0px_#101010]"
+          className="w-10 h-10 xl:w-11 xl:h-11 drop-shadow-[3px_3px_0px_#101010]"
           aria-hidden="true"
         >
-          {/* Black shadow */}
           <polygon
             points="35,6 59,30 45,30 45,58 25,58 25,30 11,30"
             fill="black"
             transform="translate(3, 4)"
           />
-          {/* Lime Green Arrow body */}
           <polygon
             points="35,6 59,30 45,30 45,58 25,58 25,30 11,30"
             fill="#9AE885"
@@ -407,31 +204,30 @@ export default function InventeBackground() {
         </svg>
       </motion.div>
 
-      {/* ── STICKER 5: Orange Energy Zap Pin ─────────────────────
-          Anchored: Outer flank edge of Lime VHS Tape (vhs-3)
-          Animation: Smooth Lissajous figure-eight orbital drift
+      {/* ── [LEFT 3] STICKER 5: Orange Energy Zap Pin ───────────
+          Mid Left flank
          ────────────────────────────────────────────────────── */}
       <motion.div
-        className="absolute hidden xl:block z-20 pointer-events-none"
+        className="absolute hidden lg:block z-10 pointer-events-none"
         style={{
-          top: "clamp(370px, 45vh, 460px)",
-          right: "clamp(14px, 1.8vw, 36px)",
+          top: "clamp(400px, 48vh, 460px)",
+          left: "clamp(20px, 3vw, 55px)",
         }}
         animate={{
-          x: [0, 12, 0, -12, 0],
-          y: [0, -10, 0, 10, 0],
-          rotate: [-4, 6, -4, -8, -4],
+          x: [0, 14, -10, 0],
+          y: [0, -15, 12, 0],
+          rotate: [0, 12, -8, 0],
         }}
         transition={{
-          duration: 8.2,
+          duration: 11,
           repeat: Infinity,
           ease: "easeInOut",
-          delay: 0.2,
+          delay: 0.3,
         }}
       >
         <svg
           viewBox="1185 428 115 225"
-          className="w-7 h-14 xl:w-8 xl:h-16 drop-shadow-[2px_3px_0px_#101010]"
+          className="w-7 h-14 xl:w-8 xl:h-16 drop-shadow-[3px_3px_0px_#101010]"
           aria-hidden="true"
         >
           <path
@@ -448,34 +244,115 @@ export default function InventeBackground() {
         </svg>
       </motion.div>
 
-      {/* ── STICKER 6: Cyber Purple 4-Point Sparkle Star ──────────
-          Anchored: Companion Sparkle kissing the Hero Smiley Badge
-          Animation: Stepped mechanical 90° tick rotation (retro clock snap)
+      {/* ── [LEFT 4] STICKER 3: Pink 12-Point Fest Star Badge ───
+          Lower-Mid Left flank
          ────────────────────────────────────────────────────── */}
       <motion.div
-        className="absolute hidden sm:block z-20 pointer-events-none"
+        className="absolute hidden lg:block z-10 pointer-events-none"
         style={{
-          top: "clamp(175px, 19vh, 210px)",
-          right: "clamp(125px, 11vw, 170px)",
+          top: "clamp(560px, 66vh, 630px)",
+          left: "clamp(42px, 6.5vw, 100px)",
         }}
         animate={{
-          rotate: [0, 0, 90, 90, 180, 180, 270, 270, 360],
-          y: [0, -8, -8, 8, 8, -6, -6, 6, 0],
+          x: [0, -12, 10, 0],
+          y: [0, 18, -10, 0],
+          rotate: [0, 15, -10, 0],
+          scale: [1, 1.10, 0.96, 1],
         }}
         transition={{
-          duration: 9.0,
+          duration: 10.5,
           repeat: Infinity,
-          times: [0, 0.2, 0.25, 0.45, 0.5, 0.7, 0.75, 0.95, 1],
           ease: "easeInOut",
-          delay: 0.6,
+          delay: 0.5,
+        }}
+      >
+        <svg
+          viewBox="970 716 76 56"
+          className="w-11 h-11 xl:w-12 xl:h-12 drop-shadow-[3px_3px_0px_#101010]"
+          aria-hidden="true"
+        >
+          <path
+            d="M1007.92 718.806L1012.05 734.03L1027.24 722.79L1018.99 737.164L1040.44 733.477L1022.43 742.438L1043.3 747.475L1021.25 748.177L1034.94 760.338L1015.84 752.559L1017.99 767.983L1007.92 754.193L997.845 767.983L999.993 752.559L980.899 760.338L994.584 748.177L972.531 747.475L993.409 742.438L975.398 733.477L996.84 737.164L988.589 722.79L1003.79 734.03L1007.92 718.806Z"
+            fill="black"
+          />
+          <path
+            d="M1006.4 716.355L1010.5 731.5L1025.7 720.2L1017.5 734.5L1038.9 730.8L1020.9 739.8L1041.8 744.8L1019.7 745.5L1033.4 757.7L1014.3 749.9L1016.4 765.3L1006.4 751.5L996.3 765.3L998.5 749.9L979.4 757.7L993.1 745.5L971 744.8L991.9 739.8L973.9 730.8L995.3 734.5L987.1 720.2L1002.3 731.5L1006.4 716.355Z"
+            fill="#FE90E9"
+            stroke="black"
+            strokeWidth="1.8"
+          />
+        </svg>
+      </motion.div>
+
+      {/* ── [LEFT 5] STICKER 8: Neon Mint Retro Daisy Flower Cog ─
+          Bottom-Left corner
+         ────────────────────────────────────────────────────── */}
+      <motion.div
+        className="absolute hidden lg:block z-10 pointer-events-none"
+        style={{
+          bottom: "clamp(35px, 5vh, 65px)",
+          left: "clamp(20px, 3vw, 60px)",
+        }}
+        animate={{
+          x: [0, 12, -8, 0],
+          y: [0, -14, 10, 0],
+          rotate: [0, 360],
+        }}
+        transition={{
+          x: { duration: 9, repeat: Infinity, ease: "easeInOut" },
+          y: { duration: 8, repeat: Infinity, ease: "easeInOut" },
+          rotate: { duration: 22, repeat: Infinity, ease: "linear" },
         }}
       >
         <svg
           viewBox="0 0 64 64"
-          className="w-9 h-9 xl:w-11 xl:h-11 drop-shadow-[2px_3px_0px_#101010]"
+          className="w-9 h-9 xl:w-10 xl:h-10 drop-shadow-[3px_3px_0px_#101010]"
           aria-hidden="true"
         >
-          {/* Black shadow */}
+          <g transform="translate(3, 3)">
+            <circle cx="32" cy="14" r="9" fill="black" />
+            <circle cx="48" cy="23" r="9" fill="black" />
+            <circle cx="48" cy="41" r="9" fill="black" />
+            <circle cx="32" cy="50" r="9" fill="black" />
+            <circle cx="16" cy="41" r="9" fill="black" />
+            <circle cx="16" cy="23" r="9" fill="black" />
+            <circle cx="32" cy="32" r="10" fill="black" />
+          </g>
+          <circle cx="32" cy="14" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
+          <circle cx="48" cy="23" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
+          <circle cx="48" cy="41" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
+          <circle cx="32" cy="50" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
+          <circle cx="16" cy="41" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
+          <circle cx="16" cy="23" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
+          <circle cx="32" cy="32" r="9" fill="#FFD12E" stroke="black" strokeWidth="2.5" />
+        </svg>
+      </motion.div>
+
+      {/* ── [RIGHT 1] STICKER 6: Cyber Purple Sparkle Star ───────
+          Upper Right flank (comfortably below the rotating smiley)
+         ────────────────────────────────────────────────────── */}
+      <motion.div
+        className="absolute hidden lg:block z-10 pointer-events-none"
+        style={{
+          top: "clamp(270px, 31vh, 320px)",
+          right: "clamp(36px, 5.5vw, 90px)",
+        }}
+        animate={{
+          x: [0, -14, 10, 0],
+          y: [0, 16, -12, 0],
+          rotate: [0, 90, 180, 270, 360],
+        }}
+        transition={{
+          x: { duration: 11, repeat: Infinity, ease: "easeInOut" },
+          y: { duration: 9.5, repeat: Infinity, ease: "easeInOut" },
+          rotate: { duration: 16, repeat: Infinity, ease: "easeInOut" },
+        }}
+      >
+        <svg
+          viewBox="0 0 64 64"
+          className="w-9 h-9 xl:w-11 xl:h-11 drop-shadow-[3px_3px_0px_#101010]"
+          aria-hidden="true"
+        >
           <path
             d="M32 4 C32 20 34 22 50 22 C34 22 32 24 32 40 C32 24 30 22 14 22 C30 22 32 20 32 4 Z"
             fill="black"
@@ -483,7 +360,6 @@ export default function InventeBackground() {
             strokeWidth="2"
             transform="translate(3, 4)"
           />
-          {/* Front Purple Sparkle */}
           <path
             d="M32 4 C32 20 34 22 50 22 C34 22 32 24 32 40 C32 24 30 22 14 22 C30 22 32 20 32 4 Z"
             fill="#D4A5FF"
@@ -494,40 +370,113 @@ export default function InventeBackground() {
         </svg>
       </motion.div>
 
-      {/* ── STICKER 7: Solar Yellow 8-Point Asterisk Cross ───────
-          Anchored: Base spine label of Lime VHS Tape (vhs-3)
-          Animation: 3D-like skew tilt & wave hover
+      {/* ── [RIGHT 2] STICKER 2: Yellow 4-Petal Cross ───────────
+          Mid-Upper Right flank
          ────────────────────────────────────────────────────── */}
       <motion.div
-        className="absolute hidden lg:block z-20 pointer-events-none"
+        className="absolute hidden lg:block z-10 pointer-events-none"
         style={{
-          top: "clamp(540px, 67vh, 680px)",
-          right: "clamp(95px, 9vw, 145px)",
+          top: "clamp(410px, 47vh, 470px)",
+          right: "clamp(20px, 3vw, 60px)",
         }}
         animate={{
-          rotate: [-12, 12, -12],
-          skewX: [-4, 4, -4],
-          y: [-10, 10, -10],
+          x: [0, 12, -10, 0],
+          y: [0, -18, 14, 0],
+          rotate: [-14, 14, -14],
         }}
         transition={{
-          duration: 6.6,
+          duration: 9.2,
           repeat: Infinity,
           ease: "easeInOut",
-          delay: 1.0,
+          delay: 0.4,
+        }}
+      >
+        <svg
+          viewBox="628 464 96 96"
+          className="w-10 h-10 xl:w-11 xl:h-11 drop-shadow-[3px_3px_0px_#101010]"
+          aria-hidden="true"
+        >
+          <path
+            d="M711.403 479.865C701.195 470.566 678.542 492.92 678.542 492.92C678.542 492.92 653.526 470.149 643.88 480.766C634.441 491.156 657.385 514.077 657.385 514.077C657.385 514.077 635.095 537.406 644.78 547.389C654.58 557.491 678.542 534.785 678.542 534.785C678.542 534.785 701.54 556.962 711.403 547.389C721.43 537.658 698.349 514.077 698.349 514.077C698.349 514.077 721.975 489.496 711.403 479.865Z"
+            fill="black"
+            stroke="black"
+          />
+          <path
+            d="M707.802 476.264C697.594 466.965 674.94 489.318 674.94 489.318C674.94 489.318 649.924 466.547 640.278 477.164C630.839 487.554 653.783 510.476 653.783 510.476C653.783 510.476 631.494 533.804 641.179 543.788C650.978 553.889 674.94 531.183 674.94 531.183C674.94 531.183 697.938 553.36 707.802 543.788C717.829 534.057 694.747 510.476 694.747 510.476C694.747 510.476 718.374 485.894 707.802 476.264Z"
+            fill="#FFD12E"
+            stroke="black"
+          />
+        </svg>
+      </motion.div>
+
+      {/* ── [RIGHT 3] STICKER 9: Cyan Retro Crosshair / Radar ────
+          Mid-Lower Right flank
+         ────────────────────────────────────────────────────── */}
+      <motion.div
+        className="absolute hidden lg:block z-10 pointer-events-none"
+        style={{
+          top: "clamp(550px, 63vh, 610px)",
+          right: "clamp(42px, 6.5vw, 100px)",
+        }}
+        animate={{
+          x: [0, -12, 14, 0],
+          y: [0, 16, -14, 0],
+          rotate: [0, 45, 90, 135, 180],
+          scale: [1, 1.08, 1],
+        }}
+        transition={{
+          duration: 13,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 0.6,
+        }}
+      >
+        <svg
+          viewBox="0 0 60 60"
+          className="w-8 h-8 xl:w-9 xl:h-9 drop-shadow-[3px_3px_0px_#101010]"
+          aria-hidden="true"
+        >
+          <circle cx="32" cy="32" r="22" fill="black" />
+          <circle cx="30" cy="30" r="22" fill="#C1F8FF" stroke="black" strokeWidth="2.5" />
+          <circle cx="30" cy="30" r="13" fill="none" stroke="black" strokeWidth="2" strokeDasharray="3 3" />
+          <line x1="30" y1="12" x2="30" y2="48" stroke="black" strokeWidth="2.5" />
+          <line x1="12" y1="30" x2="48" y2="30" stroke="black" strokeWidth="2.5" />
+          <circle cx="30" cy="30" r="4" fill="black" />
+        </svg>
+      </motion.div>
+
+      {/* ── [RIGHT 4] STICKER 7: Solar Yellow 8-Point Asterisk ──
+          Lower Right flank
+         ────────────────────────────────────────────────────── */}
+      <motion.div
+        className="absolute hidden lg:block z-10 pointer-events-none"
+        style={{
+          top: "clamp(690px, 76vh, 750px)",
+          right: "clamp(22px, 3vw, 65px)",
+        }}
+        animate={{
+          x: [0, 14, -8, 0],
+          y: [0, -16, 12, 0],
+          rotate: [-12, 12, -12],
+          skewX: [-4, 4, -4],
+        }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 0.8,
         }}
       >
         <svg
           viewBox="88 94 54 50"
-          className="w-9 h-9 xl:w-10 xl:h-10 drop-shadow-[2px_3px_0px_#101010]"
+          className="w-9 h-9 xl:w-10 xl:h-10 drop-shadow-[3px_3px_0px_#101010]"
           aria-hidden="true"
         >
-          {/* Shadow */}
           <path
             d="M110.018 97.6946L110.679 108.683L101.345 100.548L92.5657 112.697L104.445 118.236L92.532 121.358L98.7128 134.586L108.493 127.688L105.208 139.506L120.095 141.218L119.579 128.963L128.171 137.975L137.511 126.533L125.984 120.714L138.495 117.981L132.07 104.083L121.766 109.958L125.855 99.5166L110.018 97.6946Z"
             fill="black"
             stroke="black"
           />
-          {/* Front */}
           <path
             d="M108.019 95.5391L108.68 106.527L99.346 98.3926L90.5666 110.541L102.446 116.08L90.533 119.203L96.7138 132.431L106.494 125.532L103.209 137.35L118.096 139.063L117.58 126.808L126.172 135.82L135.512 124.377L123.985 118.558L136.496 115.825L130.071 101.927L119.767 107.803L123.856 97.3611L108.019 95.5391Z"
             fill="#F7CB46"
@@ -537,145 +486,53 @@ export default function InventeBackground() {
         </svg>
       </motion.div>
 
-      {/* ── STICKER 8: Neon Mint Retro Daisy Flower Cog ──────────
-          Anchored: Bottom-Left footer boundary anchor
-          Animation: Continuous counter-clockwise 360° gear rotation
+      {/* ── [RIGHT 5] STICKER 10: Hot Pink Cassette Reel Cog ────
+          Bottom-Right corner
          ────────────────────────────────────────────────────── */}
       <motion.div
-        className="absolute hidden md:block z-20 pointer-events-none"
+        className="absolute hidden lg:block z-10 pointer-events-none"
         style={{
-          bottom: "clamp(24px, 4.5vh, 50px)",
-          left: "clamp(24px, 3vw, 60px)",
+          bottom: "clamp(35px, 5vh, 65px)",
+          right: "clamp(42px, 6vw, 95px)",
         }}
         animate={{
+          x: [0, -10, 12, 0],
+          y: [0, -14, 10, 0],
           rotate: [0, -360],
-          y: [0, 8, 0],
-          scale: [1, 1.06, 1],
         }}
         transition={{
-          rotate: { duration: 22, repeat: Infinity, ease: "linear" },
-          y: { duration: 5.6, repeat: Infinity, ease: "easeInOut" },
-          scale: { duration: 5.6, repeat: Infinity, ease: "easeInOut" },
-        }}
-      >
-        <svg
-          viewBox="0 0 64 64"
-          className="w-9 h-9 xl:w-10 xl:h-10 drop-shadow-[2px_3px_0px_#101010]"
-          aria-hidden="true"
-        >
-          {/* Black shadow */}
-          <g transform="translate(3, 3)">
-            <circle cx="32" cy="14" r="9" fill="black" />
-            <circle cx="48" cy="23" r="9" fill="black" />
-            <circle cx="48" cy="41" r="9" fill="black" />
-            <circle cx="32" cy="50" r="9" fill="black" />
-            <circle cx="16" cy="41" r="9" fill="black" />
-            <circle cx="16" cy="23" r="9" fill="black" />
-            <circle cx="32" cy="32" r="10" fill="black" />
-          </g>
-          {/* Front Mint Daisy */}
-          <circle cx="32" cy="14" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
-          <circle cx="48" cy="23" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
-          <circle cx="48" cy="41" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
-          <circle cx="32" cy="50" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
-          <circle cx="16" cy="41" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
-          <circle cx="16" cy="23" r="9" fill="#A3E635" stroke="black" strokeWidth="2.5" />
-          {/* Center core */}
-          <circle cx="32" cy="32" r="9" fill="#FFD12E" stroke="black" strokeWidth="2.5" />
-        </svg>
-      </motion.div>
-
-      {/* ── STICKER 9: Cyan Retro Crosshair / Radar Target ───────
-          Anchored: Top bar HUD anchor next to +[REC_01] tag
-          Animation: Radar scan step rotation & pulse drift
-         ────────────────────────────────────────────────────── */}
-      <motion.div
-        className="absolute hidden sm:block z-20 pointer-events-none"
-        style={{
-          top: "68px",
-          left: "clamp(260px, 29vw, 380px)",
-        }}
-        animate={{
-          scale: [1, 1.12, 1],
-          rotate: [0, 45, 90, 135, 180],
-          x: [-5, 5, -5],
-        }}
-        transition={{
-          duration: 7.5,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 0.5,
+          x: { duration: 8.5, repeat: Infinity, ease: "easeInOut" },
+          y: { duration: 7.8, repeat: Infinity, ease: "easeInOut" },
+          rotate: { duration: 20, repeat: Infinity, ease: "linear" },
         }}
       >
         <svg
           viewBox="0 0 60 60"
-          className="w-8 h-8 xl:w-9 xl:h-9 drop-shadow-[2px_3px_0px_#101010]"
+          className="w-8 h-8 xl:w-9 xl:h-9 drop-shadow-[3px_3px_0px_#101010]"
           aria-hidden="true"
         >
-          {/* Shadow */}
-          <circle cx="32" cy="32" r="22" fill="black" />
-          {/* Front Target */}
-          <circle cx="30" cy="30" r="22" fill="#C1F8FF" stroke="black" strokeWidth="2.5" />
-          <circle cx="30" cy="30" r="13" fill="none" stroke="black" strokeWidth="2" strokeDasharray="3 3" />
-          <line x1="30" y1="12" x2="30" y2="48" stroke="black" strokeWidth="2.5" />
-          <line x1="12" y1="30" x2="48" y2="30" stroke="black" strokeWidth="2.5" />
-          <circle cx="30" cy="30" r="4" fill="black" />
-        </svg>
-      </motion.div>
-
-      {/* ── STICKER 10: Hot Pink Cassette Reel Cog ────────────────
-          Anchored: Bottom bar HUD anchor next to [TAPE_INDEX: 04] + tag
-          Animation: Elastic spring wobble & micro-bob
-         ────────────────────────────────────────────────────── */}
-      <motion.div
-        className="absolute hidden sm:block z-20 pointer-events-none"
-        style={{
-          bottom: "24px",
-          right: "clamp(260px, 29vw, 380px)",
-        }}
-        animate={{
-          rotate: [0, 30, -30, 0],
-          y: [0, -10, 2, 0],
-          scale: [1, 1.10, 0.96, 1],
-        }}
-        transition={{
-          duration: 5.0,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 1.2,
-        }}
-      >
-        <svg
-          viewBox="0 0 60 60"
-          className="w-8 h-8 xl:w-9 xl:h-9 drop-shadow-[2px_3px_0px_#101010]"
-          aria-hidden="true"
-        >
-          {/* Shadow */}
           <g transform="translate(2.5, 3.5)">
             <circle cx="30" cy="30" r="20" fill="black" />
           </g>
-          {/* Front Cog Reel */}
           <circle cx="30" cy="30" r="20" fill="#FE90E9" stroke="black" strokeWidth="2.5" />
-          {/* 6 Teeth Spokes */}
           <line x1="30" y1="14" x2="30" y2="46" stroke="black" strokeWidth="3.5" strokeLinecap="round" />
           <line x1="16.14" y1="22" x2="43.86" y2="38" stroke="black" strokeWidth="3.5" strokeLinecap="round" />
           <line x1="16.14" y1="38" x2="43.86" y2="22" stroke="black" strokeWidth="3.5" strokeLinecap="round" />
-          {/* Center Reel Hole */}
           <circle cx="30" cy="30" r="8" fill="#FAFAF5" stroke="black" strokeWidth="2.5" />
         </svg>
       </motion.div>
 
       {/* ──────────────────────────────────────────────────────
-          RETRO TECH CROSSHAIR MARKERS
+          RETRO TECH CROSSHAIR MARKERS (Placed safely at outer edges)
          ────────────────────────────────────────────────────── */}
       <div
         aria-hidden="true"
         className="absolute hidden sm:block font-mono select-none"
         style={{
           top: "76px",
-          left: "clamp(160px, 22vw, 280px)",
+          left: "clamp(24px, 3vw, 50px)",
           fontSize: "11px",
-          color: "rgba(31,27,18,0.3)",
+          color: "rgba(31,27,18,0.35)",
           letterSpacing: "0.04em",
         }}
       >
@@ -685,10 +542,10 @@ export default function InventeBackground() {
         aria-hidden="true"
         className="absolute hidden sm:block font-mono select-none"
         style={{
-          bottom: "32px",
-          right: "clamp(160px, 22vw, 280px)",
+          bottom: "24px",
+          right: "clamp(24px, 3vw, 50px)",
           fontSize: "11px",
-          color: "rgba(31,27,18,0.28)",
+          color: "rgba(31,27,18,0.32)",
           letterSpacing: "0.04em",
         }}
       >
@@ -698,4 +555,3 @@ export default function InventeBackground() {
     </div>
   );
 }
-
