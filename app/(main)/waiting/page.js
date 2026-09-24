@@ -4,6 +4,12 @@ import { useRouter } from "next/navigation";
 import PlayerWaiting from "@/components/PlayerWaiting";
 import { supabase } from "@/lib/client";
 import { whereLab } from "@/lib/utils";
+import {
+  IS_MOCK_MODE,
+  DEFAULT_MOCK_PLAYER,
+  DEFAULT_MOCK_TEAM,
+  MOCK_UPCOMING_SESSION,
+} from "@/lib/mockData";
 
 export default function PlayerWaitingPage() {
   const [player, setPlayer] = useState(null);
@@ -13,6 +19,10 @@ export default function PlayerWaitingPage() {
   const router = useRouter();
 
   const checkSessionStatus = useCallback(async (playerId, teamData) => {
+    if (IS_MOCK_MODE) {
+      return;
+    }
+
     const { data: sessionData, error } = await whereLab(
       supabase.from("quiz_sessions").select("*").eq("status", "active"),
       teamData.lab,
@@ -49,6 +59,11 @@ export default function PlayerWaitingPage() {
   }, [router]);
 
   const checkForUpcomingSession = async (teamData) => {
+    if (IS_MOCK_MODE) {
+      setUpcomingSession(MOCK_UPCOMING_SESSION);
+      return;
+    }
+
     const { data, error } = await whereLab(
       supabase.from("quiz_sessions").select("*").eq("status", "scheduled"),
       teamData.lab,
@@ -66,6 +81,12 @@ export default function PlayerWaitingPage() {
 
   const verifyPlayerData = useCallback(async (playerData, teamData) => {
     if (!playerData || !teamData) return false;
+
+    if (IS_MOCK_MODE) {
+      setPlayer(playerData);
+      setTeam(teamData);
+      return true;
+    }
 
     // Check if player exists in the database
     const { data: playerDbData, error: playerError } = await supabase
@@ -109,13 +130,24 @@ export default function PlayerWaitingPage() {
 
   useEffect(() => {
     const initializePlayer = async () => {
-      const playerData = JSON.parse(localStorage.getItem('playerData'));
-      const teamData = JSON.parse(localStorage.getItem('teamData'));
+      let playerData = JSON.parse(localStorage.getItem('playerData'));
+      let teamData = JSON.parse(localStorage.getItem('teamData'));
+
+      if ((!playerData || !teamData) && IS_MOCK_MODE) {
+        playerData = DEFAULT_MOCK_PLAYER;
+        teamData = DEFAULT_MOCK_TEAM;
+        localStorage.setItem('playerData', JSON.stringify(playerData));
+        localStorage.setItem('teamData', JSON.stringify(teamData));
+      }
       
       const isValid = await verifyPlayerData(playerData, teamData);
       
       if (isValid) {
-        checkSessionStatus(playerData.id, teamData);
+        if (IS_MOCK_MODE) {
+          setUpcomingSession(MOCK_UPCOMING_SESSION);
+        } else {
+          checkSessionStatus(playerData.id, teamData);
+        }
       } else {
         handleLogout();
       }
@@ -125,6 +157,8 @@ export default function PlayerWaitingPage() {
   }, [checkSessionStatus, verifyPlayerData]);
 
   useEffect(() => {
+    if (IS_MOCK_MODE) return;
+
     const subscription = supabase
       .channel("quiz_sessions")
       .on(
@@ -144,7 +178,7 @@ export default function PlayerWaitingPage() {
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [player, checkSessionStatus]);
+  }, [player, team, checkSessionStatus]);
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem('playerData');
@@ -152,8 +186,18 @@ export default function PlayerWaitingPage() {
     router.push('/');
   }, [router]);
 
+  const handleStartGame = () => {
+    router.push('/game');
+  };
+
   if (!player || !team) {
-    return <div key="loading" className="min-h-screen">Loading...</div>;
+    return (
+      <div key="loading" className="w-full min-h-[calc(100vh-120px)] flex items-center justify-center relative bg-transparent overflow-hidden">
+        <div className="font-mono text-sm font-bold text-black/60 bg-white border-2 border-black px-4 py-2 shadow-[3px_3px_0px_#101010] relative z-10">
+          Loading session standby...
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -163,6 +207,7 @@ export default function PlayerWaitingPage() {
       upcomingSession={upcomingSession}
       message={message}
       onLogout={handleLogout}
+      onStartGame={handleStartGame}
     />
   );
 }
