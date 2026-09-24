@@ -114,54 +114,59 @@ export default function Loader({ onLoadComplete }) {
           animate="visible"
           exit="exit"
         >
-          {/* Top-Left: SSN & SNU IT Badges */}
-          <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-10 flex items-center gap-2 sm:gap-3">
-            <div className="border-2 border-black bg-white px-3 py-1.5 shadow-[3px_3px_0px_#101010] flex items-center gap-2">
-              <Image
-                src="/invente/ssn.webp"
-                alt="SSN"
-                width={38}
-                height={20}
-                className="h-5 w-auto object-contain"
-                priority
-              />
-              <span className="text-xs font-black tracking-wide">SSN</span>
+          {/* Top Header Bar: Responsive flex container ensuring zero overlap across all screen widths */}
+          <div className="absolute top-4 sm:top-8 inset-x-3 sm:inset-x-8 z-10 flex flex-wrap sm:flex-nowrap items-center justify-between gap-1.5 sm:gap-3">
+            {/* Left: Institutional & Department Badges */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
+              <div className="border-2 border-black bg-white px-2 sm:px-3 py-1 sm:py-1.5 shadow-[2px_2px_0px_#101010] sm:shadow-[3px_3px_0px_#101010] flex items-center gap-1.5 shrink-0">
+                <Image
+                  src="/invente/ssn.webp"
+                  alt="SSN"
+                  width={38}
+                  height={20}
+                  className="h-4 sm:h-5 w-auto object-contain"
+                  priority
+                />
+                <span className="text-[10px] sm:text-xs font-black tracking-wide">SSN</span>
+              </div>
+              <div className="border-2 border-black bg-white px-2 sm:px-3 py-1 sm:py-1.5 shadow-[2px_2px_0px_#101010] sm:shadow-[3px_3px_0px_#101010] flex items-center gap-1.5 shrink-0">
+                <Image
+                  src="/invente/snu.webp"
+                  alt="SNUC"
+                  width={38}
+                  height={20}
+                  className="h-4 sm:h-5 w-auto object-contain"
+                  priority
+                />
+                <span className="text-[10px] sm:text-xs font-black tracking-wide">SNUC</span>
+              </div>
+              <span className="border-2 border-black bg-[#9AE885] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-black uppercase shadow-[2px_2px_0px_#101010] sm:shadow-[3px_3px_0px_#101010] shrink-0">
+                <span className="inline sm:hidden">IT DEPT</span>
+                <span className="hidden sm:inline">IT DEPARTMENT</span>
+              </span>
             </div>
-            <div className="border-2 border-black bg-white px-3 py-1.5 shadow-[3px_3px_0px_#101010] flex items-center gap-2">
-              <Image
-                src="/invente/snu.webp"
-                alt="SNUC"
-                width={38}
-                height={20}
-                className="h-5 w-auto object-contain"
-                priority
-              />
-              <span className="text-xs font-black tracking-wide">SNUC</span>
-            </div>
-            <span className="hidden sm:inline-block border-2 border-black bg-[#9AE885] px-3 py-1.5 text-xs font-black uppercase shadow-[3px_3px_0px_#101010]">
-              IT DEPARTMENT
-            </span>
-          </div>
 
-          {/* Top-Right: Event Tag */}
-          <div className="absolute top-6 right-6 sm:top-8 sm:right-8 z-10 border-2 border-black bg-[#FFD12E] px-3.5 py-1.5 text-xs font-black uppercase shadow-[3px_3px_0px_#101010] tracking-wider">
-            INVENTE ’26 • TECH FEST
+            {/* Right: Event Tag */}
+            <div className="border-2 border-black bg-[#FFD12E] px-2.5 sm:px-3.5 py-1 sm:py-1.5 text-[10px] sm:text-xs font-black uppercase shadow-[2px_2px_0px_#101010] sm:shadow-[3px_3px_0px_#101010] tracking-wider shrink-0 ml-auto sm:ml-0">
+              <span className="inline sm:hidden">INVENTE ’26</span>
+              <span className="hidden sm:inline">INVENTE ’26 • TECH FEST</span>
+            </div>
           </div>
 
           {/* Center Stage: Title + Subtitle + Dots */}
-          <div className="flex flex-col items-center justify-center text-center z-10 max-w-2xl px-4">
+          <div className="flex flex-col items-center justify-center text-center z-10 max-w-2xl px-2 sm:px-4 my-auto">
             {/* Out of the Box Eyebrow Tag */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1, duration: 0.4 }}
-              className="mb-4 border-2 border-black bg-[#FE90E9] px-3.5 py-1 text-xs sm:text-sm font-black uppercase shadow-[3px_3px_0px_#101010] tracking-wider"
+              className="mb-2 sm:mb-4 border-2 border-black bg-[#FE90E9] px-2.5 sm:px-3.5 py-0.5 sm:py-1 text-[10px] sm:text-sm font-black uppercase shadow-[2px_2px_0px_#101010] sm:shadow-[3px_3px_0px_#101010] tracking-wider"
             >
               ★ A GIANT LEAP, OUT OF THE BOX ★
             </motion.div>
 
             {/* Websitica Main Title in signature Spicy_Rice Font */}
-            <div className="font-spicyRice text-6xl sm:text-8xl md:text-9xl text-[#101010] flex my-2 drop-shadow-[4px_4px_0px_#FFD12E]">
+            <div className="font-spicyRice text-5xl sm:text-8xl md:text-9xl text-[#101010] flex my-1 sm:my-2 drop-shadow-[3px_3px_0px_#FFD12E] sm:drop-shadow-[4px_4px_0px_#FFD12E]">
               {text.split("").map((letter, index) => (
                 <motion.span
                   key={index}
@@ -178,14 +183,14 @@ export default function Loader({ onLoadComplete }) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.35, duration: 0.4 }}
-              className="mt-2 mb-6 border-2 border-black bg-[#FFD12E] px-4 py-1.5 text-xs sm:text-sm font-black uppercase shadow-[3px_3px_0px_#101010] tracking-wider"
+              className="mt-1 sm:mt-2 mb-4 sm:mb-6 border-2 border-black bg-[#FFD12E] px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-sm font-black uppercase shadow-[2px_2px_0px_#101010] sm:shadow-[3px_3px_0px_#101010] tracking-wider text-center"
             >
               PUZZLE COMPETITION • 16 TILES, 4 CONNECTIONS
             </motion.div>
 
             {/* 4 Theme Dots (Orange, Yellow, Lime, Cyan) with 2px black borders & brutal shadows */}
             <motion.div
-              className="flex gap-3.5 sm:gap-4 items-center justify-center"
+              className="flex gap-3 sm:gap-4 items-center justify-center"
               variants={dotsContainerVariants}
               initial="hidden"
               animate="visible"
@@ -200,7 +205,7 @@ export default function Loader({ onLoadComplete }) {
                   key={index}
                   variants={dotVariants}
                   className={cn(
-                    "w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-black shadow-[2px_2px_0px_#101010]",
+                    "w-3.5 h-3.5 sm:w-5 sm:h-5 rounded-full border-2 border-black shadow-[2px_2px_0px_#101010]",
                     dot.bg
                   )}
                 />
@@ -209,12 +214,12 @@ export default function Loader({ onLoadComplete }) {
           </div>
 
           {/* Bottom Diagnostics Bar */}
-          <div className="absolute bottom-6 left-6 right-6 sm:bottom-8 sm:left-8 sm:right-8 z-10 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs font-black">
-            <div className="border-2 border-black bg-white px-3.5 py-1.5 shadow-[3px_3px_0px_#101010] flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#9AE885] border border-black animate-pulse" />
+          <div className="absolute bottom-4 sm:bottom-8 inset-x-3 sm:inset-x-8 z-10 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3 text-xs font-black">
+            <div className="border-2 border-black bg-white px-2.5 sm:px-3.5 py-1 sm:py-1.5 shadow-[2px_2px_0px_#101010] sm:shadow-[3px_3px_0px_#101010] flex items-center gap-2 text-[10px] sm:text-xs">
+              <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-[#9AE885] border border-black animate-pulse" />
               <span>{status || "CONNECTING..."} {latency > 0 && `(${latency.toFixed(0)}MS)`}</span>
             </div>
-            <div className="border-2 border-black bg-[#C1F8FF] px-3.5 py-1.5 shadow-[3px_3px_0px_#101010] uppercase tracking-wider">
+            <div className="border-2 border-black bg-[#C1F8FF] px-2.5 sm:px-3.5 py-1 sm:py-1.5 shadow-[2px_2px_0px_#101010] sm:shadow-[3px_3px_0px_#101010] uppercase tracking-wider text-[10px] sm:text-xs text-center">
               OUT THINK • OUT BUILD • OUT SHINE
             </div>
           </div>

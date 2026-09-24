@@ -93,30 +93,30 @@ export default function PlayerWaiting({
         initial={false}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-lg border-3 border-black bg-white p-6 sm:p-8 shadow-[8px_8px_0px_#101010] relative z-10"
+        className="w-full max-w-lg border-3 border-black bg-white p-4 sm:p-8 shadow-[6px_6px_0px_#101010] sm:shadow-[8px_8px_0px_#101010] relative z-10"
       >
         {/* Top Header Tag */}
-        <div className="flex justify-between items-center border-b-2 border-black pb-3 mb-6 font-mono text-xs font-bold">
-          <span className="bg-[#FFD12E] border border-black px-2.5 py-0.5 shadow-[2px_2px_0px_#101010]">
+        <div className="flex flex-wrap sm:flex-nowrap justify-between items-center gap-1.5 border-b-2 border-black pb-3 mb-6 font-mono text-[10px] sm:text-xs font-bold">
+          <span className="bg-[#FFD12E] border border-black px-2 py-0.5 shadow-[2px_2px_0px_#101010] shrink-0">
             STANDBY • LAB {team.lab || 1}
           </span>
-          <span className="text-black/70 uppercase">
+          <span className="text-black/70 uppercase text-center hidden xs:inline sm:inline">
             WEBSITICA • CODECTIONS
           </span>
-          <span className="bg-[#9AE885] border border-black px-2.5 py-0.5 shadow-[2px_2px_0px_#101010]">
+          <span className="bg-[#9AE885] border border-black px-2 py-0.5 shadow-[2px_2px_0px_#101010] shrink-0">
             INVENTE ’26
           </span>
         </div>
 
         {/* Player & Team Banner */}
-        <div className="border-2 border-black bg-[#FBF9F4] p-4 mb-6 shadow-[3px_3px_0px_#101010] flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-mono font-bold text-black/60 uppercase">Contestant</p>
-            <p className="font-heading text-xl font-bold text-black">{player.name}</p>
+        <div className="border-2 border-black bg-[#FBF9F4] p-3 sm:p-4 mb-6 shadow-[3px_3px_0px_#101010] flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[10px] sm:text-[11px] font-mono font-bold text-black/60 uppercase">Contestant</p>
+            <p className="font-heading text-lg sm:text-xl font-bold text-black truncate">{player.name}</p>
           </div>
-          <div className="text-right">
-            <p className="text-[11px] font-mono font-bold text-black/60 uppercase">Team Squad</p>
-            <p className="font-mono text-sm font-bold text-black bg-[#C1F8FF] border border-black px-2 py-0.5 shadow-[2px_2px_0px_#101010]">
+          <div className="text-right shrink-0">
+            <p className="text-[10px] sm:text-[11px] font-mono font-bold text-black/60 uppercase">Team Squad</p>
+            <p className="font-mono text-xs sm:text-sm font-bold text-black bg-[#C1F8FF] border border-black px-2 py-0.5 shadow-[2px_2px_0px_#101010]">
               {team.name}
             </p>
           </div>
@@ -125,7 +125,7 @@ export default function PlayerWaiting({
         {/* Centerpiece: Animated Cassette Tape */}
         <div className="flex flex-col items-center justify-center my-4 py-4 border-2 border-dashed border-black/30 bg-[#FFF9F3] rounded-md">
           {/* Cassette Graphic with Mathematically Concentric Spinning Reels */}
-          <div className="border-2 border-black bg-white p-3.5 w-60 rounded-none shadow-[4px_4px_0px_#101010] flex items-center justify-between mb-4 relative">
+          <div className="border-2 border-black bg-white p-3 sm:p-3.5 w-60 max-w-full rounded-none shadow-[4px_4px_0px_#101010] flex items-center justify-between mb-4 relative">
             <CassetteReel size={44} duration={2.8} />
 
             <div className="flex flex-col items-center px-1 flex-1">

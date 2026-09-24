@@ -334,7 +334,7 @@ export default function JoinGame({ lab = null }) {
     isRevealingDashboard || isWaiting || isRetractingDashboard;
 
   return (
-    <div className="w-full min-h-[calc(100vh-120px)] flex flex-col items-center justify-center relative bg-transparent py-8 px-4 font-mono select-none overflow-hidden">
+    <div className="w-full min-h-[calc(100vh-120px)] flex flex-col items-center justify-center relative bg-transparent py-6 sm:py-8 px-3 sm:px-4 font-mono select-none overflow-hidden">
       <div className="w-full max-w-lg flex flex-col items-center relative z-10">
         {/* ======================================================== */}
         {/* TOP HEADER & TITLE (Matching media_1790005724810.png)    */}
@@ -347,25 +347,25 @@ export default function JoinGame({ lab = null }) {
               : { maxHeight: 0, opacity: 0, y: -25, marginBottom: "0px" }
           }
           transition={{ duration: 2.0, ease: [0.16, 1, 0.3, 1] }}
-          className="flex flex-col items-center text-center overflow-hidden w-full"
+          className="flex flex-col items-center text-center overflow-hidden w-full px-2"
         >
           {/* Institution & Department Eyebrow Badges */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className="bg-[#9AE885] border-2 border-black px-3 py-0.5 text-xs font-mono font-bold uppercase shadow-[2px_2px_0px_#101010] text-black">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-2 flex-wrap justify-center">
+            <span className="bg-[#9AE885] border-2 border-black px-2.5 sm:px-3 py-0.5 text-[10px] sm:text-xs font-mono font-bold uppercase shadow-[2px_2px_0px_#101010] text-black">
               SSN × SNUC INVENTE &apos;26
             </span>
-            <span className="bg-[#C1F8FF] border-2 border-black px-3 py-0.5 text-xs font-mono font-bold uppercase shadow-[2px_2px_0px_#101010] text-black">
+            <span className="bg-[#C1F8FF] border-2 border-black px-2.5 sm:px-3 py-0.5 text-[10px] sm:text-xs font-mono font-bold uppercase shadow-[2px_2px_0px_#101010] text-black">
               IT DEPARTMENT
             </span>
           </div>
 
           {/* Grand Centered Headline */}
-          <h1 className="font-syne text-5xl sm:text-6xl md:text-7xl font-black text-[#101010] tracking-tight uppercase leading-none my-1">
+          <h1 className="font-syne text-4xl sm:text-6xl md:text-7xl font-black text-[#101010] tracking-tight uppercase leading-none my-1">
             CODECTIONS
           </h1>
 
           {/* Subtitle Yellow Banner */}
-          <div className="mt-1.5 bg-[#FFD12E] border-2 border-black px-3 sm:px-4 py-1 font-mono font-bold text-xs uppercase shadow-[3px_3px_0px_#101010] text-black tracking-wide">
+          <div className="mt-1.5 bg-[#FFD12E] border-2 border-black px-2.5 sm:px-4 py-1 font-mono font-bold text-[10px] sm:text-xs uppercase shadow-[2px_2px_0px_#101010] sm:shadow-[3px_3px_0px_#101010] text-black tracking-wide text-center">
             A GIANT LEAP, OUT OF THE BOX • 4 GROUPS OF 4 WORDS
           </div>
         </motion.div>
@@ -386,7 +386,7 @@ export default function JoinGame({ lab = null }) {
               initial={
                 isUnmorphing
                   ? {
-                      width: "320px",
+                      width: 320,
                       backgroundColor: "#1c1c1c",
                       borderRadius: "16px",
                       scale: 1,
@@ -398,7 +398,7 @@ export default function JoinGame({ lab = null }) {
               animate={
                 isMorphing
                   ? {
-                      width: "320px",
+                      width: 320,
                       backgroundColor: "#1c1c1c",
                       borderRadius: "16px",
                       scale: 1,
@@ -408,7 +408,7 @@ export default function JoinGame({ lab = null }) {
                     }
                   : isUnmorphing
                   ? {
-                      width: "448px",
+                      width: 448,
                       backgroundColor: "#ffffff",
                       borderRadius: "0px",
                       scale: 1,
@@ -418,7 +418,7 @@ export default function JoinGame({ lab = null }) {
                     }
                   : isSealing
                   ? {
-                      width: "448px",
+                      width: 448,
                       backgroundColor: "#ffffff",
                       borderRadius: "0px",
                       scale: 0.99,
@@ -427,7 +427,7 @@ export default function JoinGame({ lab = null }) {
                       transition: { duration: 0.2 },
                     }
                   : {
-                      width: "448px",
+                      width: 448,
                       backgroundColor: "#ffffff",
                       borderRadius: "0px",
                       scale: 1,
@@ -435,7 +435,7 @@ export default function JoinGame({ lab = null }) {
                       boxShadow: "8px 8px 0px #101010",
                     }
               }
-              className="w-full max-w-full border-3 border-black relative z-30 transition-shadow overflow-hidden"
+              className="w-full max-w-md border-3 border-black relative z-30 transition-shadow overflow-hidden mx-auto"
             >
               {/* Corner Screws */}
               <motion.div
@@ -829,7 +829,7 @@ export default function JoinGame({ lab = null }) {
                         borderWidth: "3px",
                         borderColor: "#000000",
                         boxShadow: "8px 8px 0px #101010",
-                        padding: "24px",
+                        padding: "clamp(16px, 4vw, 24px)",
                         scale: 1,
                         opacity: 1,
                       }
@@ -839,7 +839,7 @@ export default function JoinGame({ lab = null }) {
                         borderWidth: ["0px", "3px"],
                         borderColor: "#000000",
                         boxShadow: ["0px 0px 0px rgba(0,0,0,0)", "8px 8px 0px #101010"],
-                        padding: ["0px", "24px"],
+                        padding: ["0px", "clamp(16px, 4vw, 24px)"],
                         scale: [0.98, 1],
                         opacity: 1,
                         transition: { duration: 0.7, ease: "easeOut" },
@@ -849,7 +849,7 @@ export default function JoinGame({ lab = null }) {
                         backgroundColor: ["#ffffff", "rgba(255,255,255,0)"],
                         borderWidth: ["3px", "0px"],
                         boxShadow: ["8px 8px 0px #101010", "0px 0px 0px rgba(0,0,0,0)"],
-                        padding: ["24px", "0px"],
+                        padding: ["clamp(16px, 4vw, 24px)", "0px"],
                         scale: [1, 0.98],
                         opacity: 1,
                         transition: { duration: 0.45, ease: "easeIn" },
@@ -881,33 +881,33 @@ export default function JoinGame({ lab = null }) {
                     className="w-full overflow-hidden flex flex-col"
                   >
                     {/* Top Standby Header Tags */}
-                    <div className="flex justify-between items-center border-b-2 border-black pb-3 mb-5 text-xs font-bold w-full">
-                      <span className="bg-[#FFD12E] border-2 border-black px-2.5 py-0.5 shadow-[2px_2px_0px_#101010] text-black">
+                    <div className="flex flex-wrap sm:flex-nowrap justify-between items-center gap-1.5 border-b-2 border-black pb-3 mb-4 sm:mb-5 text-[10px] sm:text-xs font-bold w-full">
+                      <span className="bg-[#FFD12E] border-2 border-black px-2 py-0.5 shadow-[2px_2px_0px_#101010] text-black">
                         STANDBY • LAB {activeTeam?.lab || selectedLab || 1}
                       </span>
-                      <span className="text-black/80 font-bold uppercase tracking-wider text-[11px]">
+                      <span className="text-black/80 font-bold uppercase tracking-wider text-[10px] sm:text-[11px]">
                         WEBSITICA • CODECTIONS
                       </span>
-                      <span className="bg-[#9AE885] border-2 border-black px-2.5 py-0.5 shadow-[2px_2px_0px_#101010] text-black">
+                      <span className="bg-[#9AE885] border-2 border-black px-2 py-0.5 shadow-[2px_2px_0px_#101010] text-black">
                         INVENTE ’26
                       </span>
                     </div>
 
                     {/* Contestant & Team Banner */}
-                    <div className="border-2 border-black bg-white p-4 mb-5 shadow-[3px_3px_0px_#101010] flex items-center justify-between w-full">
+                    <div className="border-2 border-black bg-white p-3 sm:p-4 mb-4 sm:mb-5 shadow-[3px_3px_0px_#101010] flex items-center justify-between w-full">
                       <div>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                        <p className="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                           CONTESTANT
                         </p>
-                        <p className="font-syne text-xl font-bold text-black uppercase mt-0.5">
+                        <p className="font-syne text-lg sm:text-xl font-bold text-black uppercase mt-0.5 truncate max-w-[140px] sm:max-w-none">
                           {activePlayer?.name || watchedPlayer || "CONTESTANT"}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                        <p className="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                           TEAM SQUAD
                         </p>
-                        <p className="text-xs font-black text-black bg-[#C1F8FF] border border-black px-2.5 py-1 shadow-[2px_2px_0px_#101010] uppercase inline-block mt-0.5">
+                        <p className="text-[11px] sm:text-xs font-black text-black bg-[#C1F8FF] border border-black px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-[2px_2px_0px_#101010] uppercase inline-block mt-0.5 truncate max-w-[130px] sm:max-w-none">
                           {activeTeam?.name || watchedTeam || "TEAM"}
                         </p>
                       </div>
@@ -959,7 +959,7 @@ export default function JoinGame({ lab = null }) {
                         }
                   }
                   transition={{ duration: 0.5 }}
-                  className="flex flex-col items-center text-center relative"
+                  className="w-full flex flex-col items-center text-center relative"
                 >
                   {/* 
                     THE WALKMAN PLAYER CONTAINER:
@@ -974,8 +974,8 @@ export default function JoinGame({ lab = null }) {
                     initial={
                       isAligning
                         ? {
-                            width: "360px",
-                            height: "340px",
+                            width: 360,
+                            height: 340,
                             backgroundColor: "#181a1e",
                             borderRadius: "16px",
                             borderWidth: "3px",
@@ -988,8 +988,8 @@ export default function JoinGame({ lab = null }) {
                     animate={
                       isShrinkingPlayer
                         ? {
-                            width: "256px",
-                            height: "68px",
+                            width: 256,
+                            height: 68,
                             backgroundColor: "#ffffff",
                             borderRadius: "0px",
                             borderWidth: "2px",
@@ -1000,8 +1000,8 @@ export default function JoinGame({ lab = null }) {
                           }
                         : isWaiting || isRevealingDashboard || isRetractingDashboard
                         ? {
-                            width: "256px",
-                            height: "68px",
+                            width: 256,
+                            height: 68,
                             backgroundColor: "#ffffff",
                             borderRadius: "0px",
                             borderWidth: "2px",
@@ -1011,8 +1011,8 @@ export default function JoinGame({ lab = null }) {
                           }
                         : isExpandingPlayer
                         ? {
-                            width: ["256px", "360px"],
-                            height: ["68px", "340px"],
+                            width: [256, 360],
+                            height: [68, 340],
                             backgroundColor: ["#ffffff", "#181a1e"],
                             borderRadius: ["0px", "16px"],
                             borderWidth: ["2px", "3px"],
@@ -1023,8 +1023,8 @@ export default function JoinGame({ lab = null }) {
                           }
                         : isAligning
                         ? {
-                            width: "360px",
-                            height: "340px",
+                            width: 360,
+                            height: 340,
                             backgroundColor: "#181a1e",
                             borderRadius: "16px",
                             borderWidth: "3px",
@@ -1035,8 +1035,8 @@ export default function JoinGame({ lab = null }) {
                           }
                         : isInserting
                         ? {
-                            width: "360px",
-                            height: "340px",
+                            width: 360,
+                            height: 340,
                             backgroundColor: "#181a1e",
                             borderRadius: "16px",
                             borderWidth: "3px",
@@ -1047,8 +1047,8 @@ export default function JoinGame({ lab = null }) {
                           }
                         : isEjecting
                         ? {
-                            width: "360px",
-                            height: "340px",
+                            width: 360,
+                            height: 340,
                             backgroundColor: "#181a1e",
                             borderRadius: "16px",
                             borderWidth: "3px",
@@ -1059,8 +1059,8 @@ export default function JoinGame({ lab = null }) {
                           }
                         : isShowingTape
                         ? {
-                            width: "360px",
-                            height: "340px",
+                            width: 360,
+                            height: 340,
                             backgroundColor: "transparent",
                             borderRadius: "16px",
                             borderWidth: "0px",
@@ -1070,8 +1070,8 @@ export default function JoinGame({ lab = null }) {
                             transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
                           }
                         : {
-                            width: "360px",
-                            height: "340px",
+                            width: 360,
+                            height: 340,
                             backgroundColor: "#181a1e",
                             borderRadius: "16px",
                             borderWidth: "3px",
@@ -1080,7 +1080,7 @@ export default function JoinGame({ lab = null }) {
                             y: 0,
                           }
                     }
-                    className={`border-black relative font-mono flex flex-col justify-between ${
+                    className={`w-full max-w-[360px] border-black relative font-mono flex flex-col justify-between mx-auto ${
                       isAligning || isInserting || isEjecting || isShowingTape
                         ? "overflow-visible"
                         : "overflow-hidden"
@@ -1176,7 +1176,7 @@ export default function JoinGame({ lab = null }) {
                                 }
                               : { y: 52, opacity: 1 }
                           }
-                          className="w-[320px] border-3 border-black bg-[#1c1c1c] rounded-2xl absolute left-[20px] top-0 z-10 shadow-[6px_6px_0px_#101010] overflow-hidden"
+                          className="w-[320px] max-w-[calc(100%-20px)] border-3 border-black bg-[#1c1c1c] rounded-2xl absolute inset-x-0 mx-auto top-0 z-10 shadow-[6px_6px_0px_#101010] overflow-hidden"
                         >
                             {/* 4 Corner Screws */}
                             <div className="absolute top-2 left-2 w-2.5 h-2.5 rounded-full bg-[#353535] border border-black flex items-center justify-center text-[8px] text-gray-300 font-mono font-black z-40 pointer-events-none">
