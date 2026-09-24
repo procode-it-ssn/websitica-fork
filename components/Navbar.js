@@ -1,7 +1,6 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { Trophy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLoading } from "@/context/LoadingContext";
 
@@ -66,13 +65,6 @@ export default function Navbar() {
             </Link>
           </div>
 
-          <Link
-            href="/admin"
-            className="flex items-center gap-1.5 border-2 border-black bg-[#C1F8FF] hover:bg-[#A3EDF7] text-black px-2.5 py-1 text-[11px] font-black uppercase shadow-[2px_2px_0px_#101010] transition-all"
-          >
-            <Trophy className="w-3.5 h-3.5" />
-            <span>ADMIN DECK</span>
-          </Link>
         </div>
       </nav>
         </motion.header>
