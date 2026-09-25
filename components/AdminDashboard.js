@@ -5,6 +5,12 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import Logout from "./Logout";
 import Image from "next/image";
+import AdminCandidates from "./AdminCandidates";
+import AdminBidding from "./AdminBidding";
+import AdminReport from "./AdminReport";
+import AdminRound1Web from "./AdminRound1Web";
+import AdminRound2 from "./AdminRound2";
+import AdminCodections from "./AdminCodections";
 import {
   Trophy,
   Play,
@@ -18,6 +24,14 @@ import {
   Sparkles,
   AlertTriangle,
   Flame,
+  Users,
+  Target,
+  Download,
+  Gamepad2,
+  Palette,
+  Rocket,
+  KeyRound,
+  Search,
 } from "lucide-react";
 import {
   IS_MOCK_MODE,
@@ -28,7 +42,9 @@ import {
 } from "@/lib/mockData";
 
 export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState("sessions"); // "sessions" | "candidates" | "bidding" | "report"
   const [teams, setTeams] = useState([]);
+  const [teamSearchQuery, setTeamSearchQuery] = useState("");
   const [sessions, setSessions] = useState([]);
   const [newSessionStart, setNewSessionStart] = useState(new Date());
   const [selectedSession, setSelectedSession] = useState(null);
@@ -42,7 +58,12 @@ export default function AdminDashboard() {
     fetchTeams();
     fetchSessions();
     fetchCategories();
-    subscribeToUpdates();
+    fetchRecentSubmissions();
+    const unsubscribe = subscribeToUpdates();
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLab]);
 
   const fetchTeams = async () => {
@@ -87,6 +108,41 @@ export default function AdminDashboard() {
       .select("category");
     if (error) console.error("Error fetching categories:", error);
     else setCategories(data.map((c) => c.category));
+  };
+
+  const fetchRecentSubmissions = async () => {
+    if (IS_MOCK_MODE) {
+      setRealtimeSubmissions(MOCK_SUBMISSIONS);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("submissions")
+        .select(
+          "score, created_at, player_id, team_id, team:teams(name, lab), player:players(name)"
+        )
+        .order("created_at", { ascending: false })
+        .limit(15);
+
+      if (!error && data) {
+        setRealtimeSubmissions(
+          data.map((s) => ({
+            teamName: s.team?.name || "Unknown Team",
+            playerName: s.player?.name || null,
+            lab: s.team?.lab || null,
+            score: s.score || 0,
+            timestamp: new Date(s.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            }),
+          }))
+        );
+      }
+    } catch (e) {
+      console.warn("Could not load recent submissions:", e);
+    }
   };
 
   const subscribeToUpdates = () => {
@@ -136,36 +192,63 @@ export default function AdminDashboard() {
   };
 
   const handleSubmissionInsert = async (payload) => {
-    const { session_id, team_id, score } = payload.new;
+    const { session_id, team_id, player_id, score } = payload.new;
 
-    const { data: teamData, error: teamError } = await supabase
-      .from("teams")
-      .select("name")
-      .eq("id", team_id)
-      .limit(1)
-      .single();
+    let teamName = "Unknown Team";
+    let lab = null;
+    let officialScore = score;
+    try {
+      const { data: teamData } = await supabase
+        .from("teams")
+        .select("name, lab, score, codections_score")
+        .eq("id", team_id)
+        .limit(1)
+        .single();
+      if (teamData) {
+        teamName = teamData.name;
+        lab = teamData.lab;
+        officialScore = teamData.codections_score ?? teamData.score ?? score;
+      }
+    } catch (e) {}
 
-    if (teamError) {
-      console.error("Error fetching team data:", teamError);
-      return;
+    let playerName = null;
+    if (player_id) {
+      try {
+        const { data: pData } = await supabase
+          .from("players")
+          .select("name")
+          .eq("id", player_id)
+          .limit(1)
+          .single();
+        if (pData?.name) playerName = pData.name;
+      } catch (e) {}
     }
-
-    const teamName = teamData ? teamData.name : "Unknown Team";
 
     setSessionScores((prevScores) => {
       const updatedScores = { ...prevScores };
       if (!updatedScores[session_id]) {
         updatedScores[session_id] = {};
       }
-      updatedScores[session_id][teamName] =
-        (updatedScores[session_id][teamName] || 0) + score;
+      updatedScores[session_id][teamName] = officialScore;
       return updatedScores;
     });
 
     setRealtimeSubmissions((prev) => [
-      ...prev,
-      { teamName, score, timestamp: new Date().toLocaleTimeString() },
+      {
+        teamName,
+        playerName,
+        lab,
+        score,
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+      },
+      ...prev.slice(0, 19),
     ]);
+
+    fetchTeams();
   };
 
   const createNewSession = async () => {
@@ -324,7 +407,7 @@ export default function AdminDashboard() {
 
     const { data, error } = await supabase
       .from("submissions")
-      .select("score, team:teams(name)")
+      .select("score, player_id, team_id, team:teams(name, score, codections_score)")
       .eq("session_id", sessionId);
 
     if (error) {
@@ -332,11 +415,40 @@ export default function AdminDashboard() {
       return;
     }
 
-    const scores = data.reduce((acc, submission) => {
-      const teamName = submission.team.name;
-      acc[teamName] = (acc[teamName] || 0) + submission.score;
-      return acc;
-    }, {});
+    // Deduplicate submissions per player to guarantee 100% score alignment with tournament squads
+    const teamPlayerMax = {};
+    const teamOfficialScores = {};
+
+    data.forEach((sub) => {
+      const teamName = sub.team?.name || "Unknown Team";
+      if (sub.team) {
+        teamOfficialScores[teamName] =
+          sub.team.codections_score ?? sub.team.score ?? 0;
+      }
+      const pKey = sub.player_id || sub.id;
+      if (!teamPlayerMax[teamName]) {
+        teamPlayerMax[teamName] = {};
+      }
+      teamPlayerMax[teamName][pKey] = Math.max(
+        teamPlayerMax[teamName][pKey] || 0,
+        sub.score || 0
+      );
+    });
+
+    const scores = {};
+    Object.keys(teamPlayerMax).forEach((teamName) => {
+      if (
+        teamOfficialScores[teamName] !== undefined &&
+        teamOfficialScores[teamName] > 0
+      ) {
+        scores[teamName] = teamOfficialScores[teamName];
+      } else {
+        scores[teamName] = Object.values(teamPlayerMax[teamName]).reduce(
+          (a, b) => a + b,
+          0
+        );
+      }
+    });
 
     setSessionScores((prevScores) => ({
       ...prevScores,
@@ -344,22 +456,83 @@ export default function AdminDashboard() {
     }));
   };
 
-  const deleteAllTeams = async () => {
-    if (
-      !confirm(
-        `Are you sure you want to delete ALL teams in Lab ${selectedLab}? This action is irreversible.`
-      )
-    ) {
-      return;
-    }
+  const handleDeleteTeam = async (team) => {
+    if (!team) return;
+    const confirmMsg = `Are you sure you want to permanently delete squad "${team.name}" (ID: ${team.id})?\n\nThis will remove all associated submissions and player records from the database.`;
+    if (!window.confirm(confirmMsg)) return;
 
     if (IS_MOCK_MODE) {
-      setTeams((prev) => prev.filter((t) => t.lab !== selectedLab));
+      setTeams((prev) => prev.filter((t) => t.id !== team.id));
       return;
     }
 
-    await supabase.from("teams").delete().eq("lab", selectedLab);
-    fetchTeams();
+    try {
+      // 1. Delete associated submissions
+      await supabase.from("submissions").delete().eq("team_id", team.id);
+      // 2. Delete associated players
+      await supabase.from("players").delete().eq("team_id", team.id);
+      // 3. Unlink any candidates assigned to this team
+      try {
+        await supabase
+          .from("candidates")
+          .update({ team_id: null, team_name: null })
+          .eq("team_id", team.id);
+      } catch (e) {}
+      // 4. Delete the team itself
+      const { error } = await supabase.from("teams").delete().eq("id", team.id);
+      if (error) throw error;
+
+      // 5. Clean up local passkey cache if present
+      try {
+        localStorage.removeItem("websitica_passkey_" + (team.name || "").toLowerCase());
+        localStorage.removeItem("websitica_passkey_id_" + team.id);
+      } catch (e) {}
+
+      await fetchTeams();
+    } catch (err) {
+      console.error("Error deleting team:", err);
+      alert("Failed to delete team: " + (err.message || "Unknown error"));
+    }
+  };
+
+  const purgeAllTeams = async (targetLab = null) => {
+    const isAll = targetLab === null;
+    const msg = isAll
+      ? "CRITICAL CONFIRMATION:\n\nAre you sure you want to permanently DELETE ALL TEAMS across the entire database (all labs)?\n\nThis will wipe all teams, players, and submissions."
+      : `Are you sure you want to delete ALL teams in Lab ${targetLab}? This action is irreversible.`;
+
+    if (!window.confirm(msg)) return;
+
+    if (IS_MOCK_MODE) {
+      if (isAll) setTeams([]);
+      else setTeams((prev) => prev.filter((t) => t.lab !== targetLab));
+      return;
+    }
+
+    try {
+      if (isAll) {
+        await supabase.from("submissions").delete().gte("id", 0);
+        await supabase.from("players").delete().gte("id", 0);
+        try {
+          await supabase.from("candidates").update({ team_id: null, team_name: null }).gte("created_at", "1970-01-01");
+        } catch (e) {}
+        await supabase.from("teams").delete().gte("id", 0);
+      } else {
+        const labTeamIds = teams.filter((t) => t.lab === targetLab).map((t) => t.id);
+        if (labTeamIds.length > 0) {
+          await supabase.from("submissions").delete().in("team_id", labTeamIds);
+          await supabase.from("players").delete().in("team_id", labTeamIds);
+          try {
+            await supabase.from("candidates").update({ team_id: null, team_name: null }).in("team_id", labTeamIds);
+          } catch (e) {}
+        }
+        await supabase.from("teams").delete().eq("lab", targetLab);
+      }
+      await fetchTeams();
+    } catch (err) {
+      console.error("Error purging teams:", err);
+      alert("Failed to purge teams: " + (err.message || "Unknown error"));
+    }
   };
 
   const selectedLabTeams = teams.filter((t) => t.lab === selectedLab);
@@ -398,14 +571,141 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Lab Switcher Segmented Bar */}
-        <div className="card-brutal bg-white border-2 border-black shadow-brutal p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-black" />
-            <span className="font-syne font-black text-sm uppercase tracking-wider text-black">
-              ACTIVE LAB ARENA:
-            </span>
-          </div>
+        {/* Top Module Tabs Bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab("sessions")}
+            className={`p-3 border-2 border-black font-syne font-black text-xs uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center ${
+              activeTab === "sessions"
+                ? "bg-[#FFD12E] text-black shadow-brutal translate-x-0.5 translate-y-0.5"
+                : "bg-white text-gray-700 hover:bg-[#FFF9A6] shadow-brutal-sm"
+            }`}
+          >
+            <Gamepad2 className="w-4 h-4 text-black flex-shrink-0" />
+            <span>SESSIONS</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("candidates")}
+            className={`p-3 border-2 border-black font-syne font-black text-xs uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center ${
+              activeTab === "candidates"
+                ? "bg-[#C1F8FF] text-black shadow-brutal translate-x-0.5 translate-y-0.5"
+                : "bg-white text-gray-700 hover:bg-[#FFF9A6] shadow-brutal-sm"
+            }`}
+          >
+            <Users className="w-4 h-4 text-black flex-shrink-0" />
+            <span>CANDIDATES</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("round1_web")}
+            className={`p-3 border-2 border-black font-syne font-black text-xs uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center ${
+              activeTab === "round1_web"
+                ? "bg-[#FFD12E] text-black shadow-brutal translate-x-0.5 translate-y-0.5"
+                : "bg-white text-gray-700 hover:bg-[#FFF9A6] shadow-brutal-sm"
+            }`}
+          >
+            <Palette className="w-4 h-4 text-black flex-shrink-0" />
+            <span>R1: WEBSITE</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("codections")}
+            className={`p-3 border-2 border-black font-syne font-black text-xs uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center ${
+              activeTab === "codections"
+                ? "bg-[#9AE885] text-black shadow-brutal translate-x-0.5 translate-y-0.5"
+                : "bg-white text-gray-700 hover:bg-[#FFF9A6] shadow-brutal-sm"
+            }`}
+          >
+            <Gamepad2 className="w-4 h-4 text-black flex-shrink-0" />
+            <span>R1: CODECTIONS</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("bidding")}
+            className={`p-3 border-2 border-black font-syne font-black text-xs uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center ${
+              activeTab === "bidding"
+                ? "bg-[#FE90E9] text-black shadow-brutal translate-x-0.5 translate-y-0.5"
+                : "bg-white text-gray-700 hover:bg-[#FFF9A6] shadow-brutal-sm"
+            }`}
+          >
+            <Target className="w-4 h-4 text-black flex-shrink-0" />
+            <span>R1: BIDDING</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("round2")}
+            className={`p-3 border-2 border-black font-syne font-black text-xs uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center ${
+              activeTab === "round2"
+                ? "bg-[#FF6B35] text-white shadow-brutal translate-x-0.5 translate-y-0.5"
+                : "bg-white text-gray-700 hover:bg-[#FFF9A6] shadow-brutal-sm"
+            }`}
+          >
+            <Rocket className="w-4 h-4 text-black flex-shrink-0" />
+            <span>R2: FINALS</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("report")}
+            className={`p-3 border-2 border-black font-syne font-black text-xs uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer text-center ${
+              activeTab === "report"
+                ? "bg-[#9AE885] text-black shadow-brutal translate-x-0.5 translate-y-0.5"
+                : "bg-white text-gray-700 hover:bg-[#FFF9A6] shadow-brutal-sm"
+            }`}
+          >
+            <Trophy className="w-4 h-4 text-black flex-shrink-0" />
+            <span>LEADERBOARD &amp; QUALIFIER</span>
+          </button>
+        </div>
+
+        {/* Tab 2: Candidate Directory (Excel upload + duplicate check + manual add) */}
+        {activeTab === "candidates" && (
+          <AdminCandidates onCandidatesUpdated={fetchTeams} />
+        )}
+
+        {/* Tab 3: Round 1 Chaos Website Marking (UI 30, UX 35, Tech 35 = 100) */}
+        {activeTab === "round1_web" && (
+          <AdminRound1Web teams={teams} onTeamsUpdated={fetchTeams} />
+        )}
+
+        {/* Tab 4: Squad Passkeys & Codections Individual Participant Marks */}
+        {activeTab === "codections" && (
+          <AdminCodections teams={teams} onTeamsUpdated={fetchTeams} />
+        )}
+
+        {/* Tab 5: Offline Bidding Arena (Interactive +/- points per question) */}
+        {activeTab === "bidding" && (
+          <AdminBidding teams={teams} onTeamsUpdated={fetchTeams} />
+        )}
+
+        {/* Tab 6: Round 2 Replica Rush Finals Marking */}
+        {activeTab === "round2" && (
+          <AdminRound2 teams={teams} onTeamsUpdated={fetchTeams} />
+        )}
+
+        {/* Tab 7: Master Report & Comprehensive Excel (.xlsx) Export */}
+        {activeTab === "report" && (
+          <AdminReport teams={teams} onTeamsUpdated={fetchTeams} />
+        )}
+
+        {/* Tab 1: Sessions Deck (Existing tournament controls) */}
+        {activeTab === "sessions" && (
+          <div className="space-y-8">
+            {/* Lab Switcher Segmented Bar */}
+            <div className="card-brutal bg-white border-2 border-black shadow-brutal p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-black" />
+                <span className="font-syne font-black text-sm uppercase tracking-wider text-black">
+                  ACTIVE LAB ARENA:
+                </span>
+              </div>
 
           <div className="flex gap-3">
             <button
@@ -416,7 +716,7 @@ export default function AdminDashboard() {
                   : "bg-white text-gray-700 hover:bg-[#FFF9A6]"
               }`}
             >
-              LAB 1 (DEPT CS)
+              LAB 1 (OS LAB)
             </button>
             <button
               onClick={() => setSelectedLab(2)}
@@ -426,7 +726,7 @@ export default function AdminDashboard() {
                   : "bg-white text-gray-700 hover:bg-[#FFF9A6]"
               }`}
             >
-              LAB 2 (DEPT IT)
+              LAB 2 (SE LAB)
             </button>
           </div>
 
@@ -505,12 +805,25 @@ export default function AdminDashboard() {
               <Play className="w-4 h-4" /> BROADCAST NEW TOURNAMENT TAPE ▶
             </button>
 
-            <button
-              onClick={deleteAllTeams}
-              className="btn-brutal bg-white hover:bg-red-50 text-red-600 border-2 border-black font-mono font-bold text-xs uppercase px-4 py-3 shadow-brutal flex items-center gap-1.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4" /> PURGE ALL TEAMS (LAB {selectedLab})
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => purgeAllTeams(selectedLab)}
+                className="btn-brutal bg-white hover:bg-red-50 text-red-600 border-2 border-black font-mono font-bold text-xs uppercase px-4 py-3 shadow-brutal flex items-center gap-1.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+                title={`Delete all teams in Lab ${selectedLab}`}
+              >
+                <Trash2 className="w-4 h-4" /> PURGE LAB {selectedLab} TEAMS
+              </button>
+
+              <button
+                type="button"
+                onClick={() => purgeAllTeams(null)}
+                className="btn-brutal bg-red-100 hover:bg-red-200 text-red-800 border-2 border-black font-mono font-bold text-xs uppercase px-4 py-3 shadow-brutal flex items-center gap-1.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer"
+                title="Wipe all dummy & registered teams across entire database"
+              >
+                <Trash2 className="w-4 h-4 text-red-700" /> PURGE ALL TEAMS (ENTIRE DB)
+              </button>
+            </div>
           </div>
         </div>
 
@@ -643,8 +956,8 @@ export default function AdminDashboard() {
                   <table className="w-full text-left border-collapse border border-black">
                     <thead>
                       <tr className="bg-[#101010] text-[#FFF9F3] text-xs font-mono uppercase">
-                        <th className="p-2.5 border border-black">Team</th>
-                        <th className="p-2.5 border border-black">Score</th>
+                        <th className="p-2.5 border border-black">Squad &amp; Contestants</th>
+                        <th className="p-2.5 border border-black text-right">Score</th>
                       </tr>
                     </thead>
                     <tbody className="text-xs font-mono">
@@ -661,21 +974,39 @@ export default function AdminDashboard() {
                       ) : (
                         Object.entries(
                           sessionScores[selectedSession.id] || {}
-                        ).map(([teamName, score], idx) => (
-                          <tr
-                            key={teamName}
-                            className={
-                              idx % 2 === 0 ? "bg-white" : "bg-[#FFF9F3]"
-                            }
-                          >
-                            <td className="p-2.5 font-bold border border-black">
-                              {teamName || "Unknown Team"}
-                            </td>
-                            <td className="p-2.5 font-black text-[#FF6B35] border border-black">
-                              {score} PTS
-                            </td>
-                          </tr>
-                        ))
+                        ).map(([teamName, score], idx) => {
+                          const matchedTeam = teams.find((t) => t.name === teamName);
+                          return (
+                            <tr
+                              key={teamName}
+                              className={
+                                idx % 2 === 0 ? "bg-white" : "bg-[#FFF9F3]"
+                              }
+                            >
+                              <td className="p-2.5 font-bold border border-black">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-syne font-black text-black">
+                                    {teamName}
+                                  </span>
+                                  {matchedTeam?.lab && (
+                                    <span className="bg-[#FFD12E] text-black border border-black px-1.5 py-0.2 text-[9px] font-mono font-bold">
+                                      LAB {matchedTeam.lab}
+                                    </span>
+                                  )}
+                                </div>
+                                {matchedTeam && (matchedTeam.participant1_name || matchedTeam.participant2_name) && (
+                                  <span className="block text-[10px] font-normal text-gray-600 mt-0.5">
+                                    {matchedTeam.participant1_name}
+                                    {matchedTeam.participant2_name ? ` & ${matchedTeam.participant2_name}` : ""}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-2.5 font-black text-[#FF6B35] border border-black text-right">
+                                {score} PTS
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
@@ -703,21 +1034,33 @@ export default function AdminDashboard() {
                   <table className="w-full text-left border-collapse border border-black">
                     <thead>
                       <tr className="bg-[#101010] text-[#FFF9F3] text-xs font-mono uppercase">
-                        <th className="p-2.5 border border-black">Team</th>
-                        <th className="p-2.5 border border-black">Score Incr</th>
-                        <th className="p-2.5 border border-black">Time</th>
+                        <th className="p-2.5 border border-black">Participant &amp; Squad</th>
+                        <th className="p-2.5 border border-black text-center">Score Incr</th>
+                        <th className="p-2.5 border border-black text-right">Time</th>
                       </tr>
                     </thead>
                     <tbody className="text-xs font-mono divide-y divide-black">
                       {realtimeSubmissions.map((submission, index) => (
                         <tr key={index} className="hover:bg-[#FFFDF9]">
-                          <td className="p-2.5 font-bold border border-black">
-                            {submission.teamName}
+                          <td className="p-2.5 border border-black">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-black text-xs">
+                                {submission.playerName || "Contestant"}
+                              </span>
+                              <span className="bg-[#C1F8FF] text-black border border-black px-1.5 py-0.2 text-[10px] font-mono font-bold">
+                                {submission.teamName}
+                              </span>
+                              {submission.lab && (
+                                <span className="bg-gray-100 text-gray-700 border border-gray-300 px-1 py-0.2 text-[9px] font-mono">
+                                  Lab {submission.lab}
+                                </span>
+                              )}
+                            </div>
                           </td>
-                          <td className="p-2.5 font-black text-green-700 border border-black">
+                          <td className="p-2.5 font-black text-green-700 border border-black text-center">
                             +{submission.score}
                           </td>
-                          <td className="p-2.5 text-gray-600 border border-black">
+                          <td className="p-2.5 text-gray-600 border border-black text-right font-mono text-[11px]">
                             {submission.timestamp}
                           </td>
                         </tr>
@@ -734,70 +1077,101 @@ export default function AdminDashboard() {
             <div className="card-brutal bg-white border-3 border-black shadow-brutal-lg p-5 sm:p-6 sticky top-6">
               <div className="flex items-center justify-between border-b-2 border-black pb-3 mb-4">
                 <h3 className="font-syne font-black text-lg uppercase tracking-tight text-black flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-[#FFD12E]" /> TOURNAMENT LEADERBOARD
+                  <Trophy className="w-5 h-5 text-[#FFD12E]" /> TOURNAMENT SQUADS &amp; SCORES
                 </h3>
                 <span className="bg-[#FF6B35] text-white text-[10px] font-mono font-bold px-2 py-0.5 border border-black">
-                  ALL LABS
+                  {teams.length} SQUADS
                 </span>
               </div>
 
-              <p className="font-mono text-xs text-gray-600 mb-4">
-                Rankings of all registered contestant teams across Lab 1 &amp; Lab 2 arenas.
+              <p className="font-mono text-xs text-gray-600 mb-3">
+                Manage registered teams in the database. You can delete test or dummy teams individually below.
               </p>
 
-              {teams.length === 0 ? (
+              {/* Team Search / Filter Input */}
+              <div className="relative mb-3">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Filter squad by name..."
+                  value={teamSearchQuery}
+                  onChange={(e) => setTeamSearchQuery(e.target.value)}
+                  className="w-full bg-[#FFFDF9] border border-black pl-8 pr-2.5 py-1.5 font-mono text-xs outline-none focus:bg-[#FFF9E6]"
+                />
+              </div>
+
+              {teams.filter((t) => (t.name || "").toLowerCase().includes(teamSearchQuery.toLowerCase())).length === 0 ? (
                 <p className="font-mono text-sm text-gray-500 py-6 text-center">
-                  No teams registered yet.
+                  {teams.length === 0 ? "No teams registered yet." : "No squads match your search filter."}
                 </p>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-[500px]">
                   <table className="w-full text-left border-collapse border border-black">
                     <thead>
-                      <tr className="bg-[#101010] text-[#FFF9F3] text-xs font-mono uppercase">
-                        <th className="p-2 border border-black">Rank</th>
+                      <tr className="bg-[#101010] text-[#FFF9F3] text-xs font-mono uppercase sticky top-0 z-10">
+                        <th className="p-2 border border-black">#</th>
                         <th className="p-2 border border-black">Team</th>
                         <th className="p-2 border border-black">Score</th>
                         <th className="p-2 border border-black">Lab</th>
+                        <th className="p-2 border border-black text-center">Action</th>
                       </tr>
                     </thead>
                     <tbody className="text-xs font-mono">
-                      {teams.map((team, idx) => {
-                        let rankPill = "bg-white text-black";
-                        if (idx === 0) rankPill = "bg-[#FFD12E] text-black font-black";
-                        else if (idx === 1) rankPill = "bg-[#C1F8FF] text-black font-black";
-                        else if (idx === 2) rankPill = "bg-[#FE90E9] text-black font-black";
+                      {teams
+                        .filter((t) => (t.name || "").toLowerCase().includes(teamSearchQuery.toLowerCase()))
+                        .map((team, idx) => {
+                          let rankPill = "bg-white text-black";
+                          if (idx === 0) rankPill = "bg-[#FFD12E] text-black font-black";
+                          else if (idx === 1) rankPill = "bg-[#C1F8FF] text-black font-black";
+                          else if (idx === 2) rankPill = "bg-[#FE90E9] text-black font-black";
 
-                        return (
-                          <tr
-                            key={team.id}
-                            className={`border-b border-black ${
-                              team.lab === selectedLab ? "bg-[#FFF9E6]" : "hover:bg-gray-50"
-                            }`}
-                          >
-                            <td className="p-2 border border-black text-center">
-                              <span
-                                className={`inline-block w-6 h-6 leading-5 border border-black text-center text-xs ${rankPill}`}
-                              >
-                                {idx + 1}
-                              </span>
-                            </td>
-                            <td className="p-2 border border-black font-bold">
-                              {team.name}
-                              <span className="block text-[10px] font-normal text-gray-500">
-                                {team.player_count || 0} players
-                              </span>
-                            </td>
-                            <td className="p-2 border border-black font-black text-[#FF6B35]">
-                              {team.score || 0}
-                            </td>
-                            <td className="p-2 border border-black">
-                              <span className="bg-[#FFF9F3] border border-black px-1.5 py-0.5 text-[10px] font-bold">
-                                L{team.lab}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                          return (
+                            <tr
+                              key={team.id}
+                              className={`border-b border-black ${
+                                team.lab === selectedLab ? "bg-[#FFF9E6]" : "hover:bg-gray-50"
+                              }`}
+                            >
+                              <td className="p-2 border border-black text-center">
+                                <span
+                                  className={`inline-block w-6 h-6 leading-5 border border-black text-center text-xs ${rankPill}`}
+                                >
+                                  {idx + 1}
+                                </span>
+                              </td>
+                              <td className="p-2 border border-black font-bold">
+                                {team.name}
+                                <span className="block text-[10px] font-normal text-gray-500">
+                                  {team.player_count || (team.participant2_name ? 2 : (team.participant1_name ? 1 : 0))} players {team.id ? `• ID: ${team.id}` : ""}
+                                </span>
+                                {(team.participant1_name || team.participant2_name) && (
+                                  <span className="block text-[10px] text-gray-400 font-mono mt-0.5 truncate max-w-xs">
+                                    {team.participant1_name}{team.participant2_name ? ` & ${team.participant2_name}` : ""}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-2 border border-black font-black text-[#FF6B35]">
+                                {team.score || 0}
+                              </td>
+                              <td className="p-2 border border-black">
+                                <span className="bg-[#FFF9F3] border border-black px-1.5 py-0.5 text-[10px] font-bold">
+                                  {team.lab ? `L${team.lab}` : "-"}
+                                </span>
+                              </td>
+                              <td className="p-2 border border-black text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteTeam(team)}
+                                  className="bg-white hover:bg-red-600 hover:text-white text-red-600 border border-black font-mono font-bold text-[10px] uppercase px-2 py-1 shadow-brutal-sm active:translate-x-0.5 active:translate-y-0.5 cursor-pointer transition-colors inline-flex items-center gap-1"
+                                  title={`Delete squad "${team.name}" from database`}
+                                >
+                                  <Trash2 className="w-3 h-3 flex-shrink-0" />
+                                  <span>DEL</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                     </tbody>
                   </table>
                 </div>
@@ -806,7 +1180,9 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+    )}
     </div>
+  </div>
   );
 }
 
