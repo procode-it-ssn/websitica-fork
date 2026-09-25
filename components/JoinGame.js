@@ -1,25 +1,184 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { supabase } from "@/lib/client";
 import { whereLab } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  Search,
+  UserCheck,
+  Users,
+  X,
+  AlertCircle,
+  KeyRound,
+  Copy,
+  Check,
+  CheckCircle2,
+  LogIn,
+  UserPlus,
+  Sparkles,
+} from "lucide-react";
 import {
   IS_MOCK_MODE,
   DEFAULT_MOCK_PLAYER,
   DEFAULT_MOCK_TEAM,
   MOCK_UPCOMING_SESSION,
+  MOCK_CANDIDATES,
+  MOCK_TEAMS,
 } from "@/lib/mockData";
 
-const schema = z.object({
-  playerName: z.string().min(2, "Contestant name must be at least 2 characters"),
-  teamName: z.string().min(2, "Team name must be at least 2 characters"),
-  lab: z.enum(["1", "2"], { errorMap: () => ({ message: "Please select your lab" }) }),
-});
+// Searchable Autocomplete Candidate Selector (Pick from registered candidate DB only)
+function CandidateSelector({
+  label,
+  placeholder,
+  selectedCandidate,
+  onSelect,
+  onClear,
+  candidates,
+  excludeId,
+  disabled,
+  isRequired = false,
+  error,
+}) {
+  const [query, setQuery] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+
+  const filteredCandidates = (candidates || []).filter((c) => {
+    if (excludeId && c.id === excludeId) return false;
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    return (
+      c.name?.toLowerCase().includes(q) ||
+      c.college?.toLowerCase().includes(q) ||
+      c.email?.toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <div className="relative mb-2.5">
+      <div className="flex items-center justify-between mb-1">
+        <label className="block text-[11px] font-bold uppercase tracking-wider text-black">
+          {label} {isRequired && <span className="text-[#E53E3E] font-black">*</span>}
+        </label>
+        <span className="text-[9px] text-gray-500 font-mono">
+          {isRequired ? "[PRE-REGISTERED CANDIDATE]" : "[OPTIONAL SECOND MEMBER]"}
+        </span>
+      </div>
+
+      {selectedCandidate ? (
+        <div className="w-full border-2 border-black bg-[#9AE885]/25 p-2 flex items-center justify-between shadow-[2px_2px_0px_#101010]">
+          <div className="flex items-center gap-2 truncate">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#38A169] flex-shrink-0 animate-pulse" />
+            <div className="truncate">
+              <span className="font-bold text-xs uppercase text-black block truncate">
+                {selectedCandidate.name}
+              </span>
+              <span className="text-[9px] text-gray-600 font-mono block truncate">
+                {selectedCandidate.college || selectedCandidate.email || "Verified Candidate"}
+              </span>
+            </div>
+          </div>
+          {!disabled && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="px-2 py-0.5 border border-black bg-white hover:bg-red-50 text-[10px] font-bold text-red-600 transition-colors uppercase cursor-pointer shadow-[1px_1px_0px_#101010]"
+            >
+              ✕ Change
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="relative">
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setIsOpen(true);
+              }}
+              onFocus={() => setIsOpen(true)}
+              placeholder={placeholder}
+              disabled={disabled}
+              className="w-full border-2 border-black bg-[#FFFDF9] pl-8 pr-3 py-1.5 font-mono text-xs font-bold text-black placeholder:text-gray-400 focus:bg-[#FFF9A6] focus:outline-none"
+              autoComplete="off"
+            />
+            <Search className="w-3.5 h-3.5 text-black absolute left-2.5 pointer-events-none" />
+          </div>
+
+          {isOpen && !disabled && (
+            <>
+              <div
+                className="fixed inset-0 z-30"
+                onClick={() => setIsOpen(false)}
+              />
+              <div className="absolute left-0 right-0 top-full mt-1 max-h-44 overflow-y-auto bg-white border-2 border-black shadow-[4px_4px_0px_#101010] z-40 divide-y divide-black/10">
+                <div className="p-1.5 bg-[#FFF9F3] text-[9px] font-bold text-gray-500 uppercase border-b border-black flex justify-between items-center">
+                  <span>Directory ({filteredCandidates.length} candidate{filteredCandidates.length === 1 ? "" : "s"})</span>
+                  <span className="text-[8px] text-gray-400">SELECT TO LOCK NAME</span>
+                </div>
+                {filteredCandidates.length === 0 ? (
+                  <div className="p-3 text-xs text-gray-500 font-bold text-center">
+                    No matching registered candidate found.
+                    <p className="text-[9px] text-gray-400 mt-0.5">
+                      Please check spelling or contact tournament desk.
+                    </p>
+                  </div>
+                ) : (
+                  filteredCandidates.map((c) => {
+                    const isAssigned = !!c.team_name;
+                    return (
+                      <button
+                        key={c.id || c.name}
+                        type="button"
+                        disabled={isAssigned}
+                        onClick={() => {
+                          onSelect(c);
+                          setIsOpen(false);
+                          setQuery("");
+                        }}
+                        className={`w-full text-left p-2 transition-colors flex items-center justify-between text-xs ${
+                          isAssigned
+                            ? "bg-gray-100 opacity-60 cursor-not-allowed"
+                            : "hover:bg-[#FFD12E]/30 cursor-pointer"
+                        }`}
+                      >
+                        <div className="truncate mr-2">
+                          <span className="font-bold text-black block truncate">{c.name}</span>
+                          <span className="text-[9px] text-gray-500 block truncate">
+                            {c.college || c.email || "Registered"}
+                          </span>
+                        </div>
+                        {isAssigned ? (
+                          <span className="text-[8px] bg-red-100 border border-red-600 px-1.5 py-0.5 text-red-700 font-bold uppercase flex-shrink-0">
+                            ALREADY IN: {c.team_name}
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-[#38A169] font-black uppercase flex-shrink-0">
+                            SELECT +
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <p className="text-[#E53E3E] text-[11px] font-bold mt-1 flex items-center gap-1">
+          <AlertCircle className="w-3 h-3 flex-shrink-0" />
+          <span>{error}</span>
+        </p>
+      )}
+    </div>
+  );
+}
 
 // Mathematically Concentric Cassette Reel (Dead-center cx=20, cy=20)
 function CassetteReel({ size = 40, duration = 2.8, reverse = false, isSpinning = true }) {
@@ -105,8 +264,89 @@ export default function JoinGame({
   const [waitingTime, setWaitingTime] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
+  const [sessionStatusInfo, setSessionStatusInfo] = useState(null);
+  const [activeSessionRunning, setActiveSessionRunning] = useState(false);
   const [upcomingSession, setUpcomingSession] = useState(null);
   const router = useRouter();
+
+  // Candidates & Form State
+  const [candidates, setCandidates] = useState([]);
+  const [selectedP1, setSelectedP1] = useState(null);
+  const [selectedP2, setSelectedP2] = useState(null);
+  const [teamNameInput, setTeamNameInput] = useState("");
+  const [selectedLabOption, setSelectedLabOption] = useState(
+    lab ? String(lab) : initialTeam?.lab ? String(initialTeam.lab) : "1"
+  );
+  const currentLab = lab ? String(lab) : selectedLabOption || "1";
+  const [p1Error, setP1Error] = useState("");
+  const [teamNameError, setTeamNameError] = useState("");
+
+  // Passkey & Login Mode states
+  const [entryMode, setEntryMode] = useState("register"); // "register" | "login"
+  const [registeredSuccessData, setRegisteredSuccessData] = useState(null);
+  const [copiedPasskey, setCopiedPasskey] = useState(false);
+
+  // Login Mode State
+  const [loginTeamName, setLoginTeamName] = useState("");
+  const [loginPasskeyInput, setLoginPasskeyInput] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [verifiedTeam, setVerifiedTeam] = useState(null);
+  const [activeParticipantNum, setActiveParticipantNum] = useState(1);
+
+  // Fetch candidates from Supabase & cross-reference active squads
+  const loadCandidates = useCallback(async () => {
+    try {
+      let rawCandidates = [];
+      if (!IS_MOCK_MODE) {
+        const { data, error } = await supabase
+          .from("candidates")
+          .select("*")
+          .order("name", { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          rawCandidates = data;
+        } else {
+          rawCandidates = MOCK_CANDIDATES;
+        }
+
+        // Cross-reference active players from players table to always know real team assignments
+        try {
+          const { data: activePlayers } = await supabase
+            .from("players")
+            .select("name, team_id, teams:team_id(name)");
+
+          if (activePlayers && activePlayers.length > 0) {
+            const playerMap = new Map();
+            activePlayers.forEach((p) => {
+              if (p.name) {
+                playerMap.set(p.name.toLowerCase().trim(), p.teams?.name || `Squad #${p.team_id}`);
+              }
+            });
+
+            rawCandidates = rawCandidates.map((c) => {
+              const assignedTeam = playerMap.get((c.name || "").toLowerCase().trim()) || c.team_name;
+              return {
+                ...c,
+                team_name: assignedTeam || null,
+              };
+            });
+          }
+        } catch (playerErr) {
+          console.warn("Could not check active players for assignment:", playerErr);
+        }
+      } else {
+        rawCandidates = MOCK_CANDIDATES;
+      }
+
+      setCandidates(rawCandidates);
+    } catch (err) {
+      setCandidates(MOCK_CANDIDATES);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCandidates();
+  }, [loadCandidates]);
 
   // Live timer once settled in waiting lobby
   useEffect(() => {
@@ -118,25 +358,6 @@ export default function JoinGame({
     }
     return () => clearInterval(timer);
   }, [animPhase]);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      playerName: initialPlayer?.name || "",
-      teamName: initialTeam?.name || "",
-      lab: lab ? String(lab) : initialTeam?.lab ? String(initialTeam.lab) : "1",
-    },
-  });
-
-  const selectedLab = watch("lab");
-  const watchedPlayer = watch("playerName");
-  const watchedTeam = watch("teamName");
 
   const checkForUpcomingSession = useCallback(async (teamData) => {
     if (IS_MOCK_MODE) {
@@ -165,6 +386,8 @@ export default function JoinGame({
         return;
       }
 
+      if (!teamData) return;
+
       const { data: sessionData, error } = await whereLab(
         supabase.from("quiz_sessions").select("*").eq("status", "active"),
         teamData.lab,
@@ -174,28 +397,85 @@ export default function JoinGame({
         .single();
 
       if (error) {
+        setActiveSessionRunning(false);
         if (error.code === "PGRST116") {
-          // No active session, check for upcoming
+          // No active session, reset completion info and check for upcoming
+          setSessionStatusInfo(null);
+          setMessage("");
           await checkForUpcomingSession(teamData);
         } else {
           console.error("Error checking session status:", error);
         }
       } else if (sessionData) {
-        // There's an active session, check if player has already submitted
-        const { data: submissionData } = await supabase
-          .from("submissions")
-          .select("*")
-          .eq("player_id", playerId)
-          .eq("session_id", sessionData.id)
-          .limit(1)
-          .single();
+        setActiveSessionRunning(true);
 
-        if (submissionData) {
+        // Find database player ID for current contestant
+        let currentPID = playerId;
+        if (!currentPID || String(currentPID).startsWith("player-")) {
+          try {
+            const { data: pRec } = await supabase
+              .from("players")
+              .select("id")
+              .eq("team_id", teamData.id)
+              .ilike("name", activePlayer?.name || "")
+              .limit(1)
+              .maybeSingle();
+            if (pRec?.id) currentPID = pRec.id;
+          } catch (e) {}
+        }
+
+        // Query submissions table with is_correct and score
+        let playerSub = null;
+        try {
+          if (currentPID && !String(currentPID).startsWith("player-")) {
+            const { data: playerSubs } = await supabase
+              .from("submissions")
+              .select("id, is_correct, score")
+              .eq("player_id", currentPID)
+              .eq("session_id", sessionData.id)
+              .order("created_at", { ascending: false })
+              .limit(1);
+
+            if (playerSubs && playerSubs.length > 0) {
+              playerSub = playerSubs[0];
+            }
+          }
+        } catch (subErr) {
+          console.warn("Error checking submissions table:", subErr);
+        }
+
+        const playerKey = `completed_session_${sessionData.id}_p${activePlayer?.participantNumber || 1}_${activePlayer?.name || ""}`;
+        const localStatus =
+          typeof window !== "undefined"
+            ? localStorage.getItem(playerKey) || sessionStorage.getItem(playerKey)
+            : null;
+        const localScore =
+          typeof window !== "undefined"
+            ? parseInt(localStorage.getItem(`${playerKey}_score`) || "0", 10)
+            : 0;
+
+        const isCompleted =
+          Boolean(playerSub) ||
+          localStatus === "completed" ||
+          localStatus === "true";
+
+        if (isCompleted) {
+          const finalScore =
+            playerSub?.score !== undefined ? playerSub.score : localScore;
+          setSessionStatusInfo({
+            type: "completed",
+            score: finalScore,
+            description:
+              "You've completed the current session. Please wait for the next broadcast.",
+          });
           setMessage(
-            "You've completed the current session. Please wait for the next one."
+            "You've completed the current session. Please wait for the next broadcast."
           );
         } else {
-          // Player hasn't submitted for this session, redirect to game
+          // Contestant has NOT completed this session yet and session is active by admin:
+          // Directly let the user enter the match!
+          setSessionStatusInfo(null);
+          setMessage("");
           try {
             sessionStorage.setItem("inWaitingRoom", "true");
           } catch (e) {}
@@ -203,7 +483,7 @@ export default function JoinGame({
         }
       }
     },
-    [router, checkForUpcomingSession]
+    [router, checkForUpcomingSession, activePlayer?.name, activePlayer?.participantNumber]
   );
 
   // Restore saved player data if user returns or initialize waiting lobby if in waiting room
@@ -230,9 +510,14 @@ export default function JoinGame({
       if (p && t) {
         setActivePlayer(p);
         setActiveTeam(t);
-        if (p?.name) setValue("playerName", p.name);
-        if (t?.name) setValue("teamName", t.name);
-        if (t?.lab) setValue("lab", String(t.lab));
+        if (p?.participant1 || p?.name) {
+          setSelectedP1({ name: p.participant1 || p.name, college: "Registered Candidate" });
+        }
+        if (p?.participant2) {
+          setSelectedP2({ name: p.participant2, college: "Registered Candidate" });
+        }
+        if (t?.name) setTeamNameInput(t.name);
+        if (t?.lab) setSelectedLabOption(String(t.lab));
 
         if (shouldBeInWaiting) {
           setAnimPhase("waiting");
@@ -251,7 +536,7 @@ export default function JoinGame({
     } catch (e) {
       // ignore
     }
-  }, [setValue, initialPhase, router]);
+  }, [initialPhase, router]);
 
   // Real-time listener for active sessions while waiting
   useEffect(() => {
@@ -297,59 +582,88 @@ export default function JoinGame({
   // ===========================================================================
   // FORWARD FLOW: FORM → TAPE → TRANSPARENT INSERTION → SHRINK → REVEAL LOBBY
   // ===========================================================================
-  const executeJoin = async (playerName, teamName, labNum) => {
-    setIsSubmitting(true);
+  // Validate team name uniqueness asynchronously
+  const validateTeamNameUniqueness = async (name) => {
+    if (!name || name.trim().length < 2) return true;
+    const trimmed = name.trim();
+    if (IS_MOCK_MODE) {
+      return !MOCK_TEAMS.some((t) => t.name.toLowerCase() === trimmed.toLowerCase());
+    }
+    try {
+      const { data, error } = await supabase
+        .from("teams")
+        .select("id, name, lab")
+        .ilike("name", trimmed);
+      if (error) return true;
+      return !(data && data.length > 0);
+    } catch (e) {
+      return true;
+    }
+  };
 
-    const targetTeam = { id: "team-" + Date.now(), name: teamName, lab: labNum, score: 0 };
-    const targetPlayer = { id: "player-" + Date.now(), name: playerName };
+  const checkParticipantAssignment = async (candidateName) => {
+    if (!candidateName) return null;
+    const trimmed = candidateName.trim().toLowerCase();
 
-    if (!IS_MOCK_MODE) {
-      try {
-        const { data: existingTeam } = await supabase
-          .from("teams")
-          .select("*")
-          .eq("name", teamName)
-          .single();
-
-        if (existingTeam && existingTeam.lab !== labNum) {
-          alert(`Team name "${teamName}" is already taken in Lab ${existingTeam.lab}.`);
-          setIsSubmitting(false);
-          return;
-        }
-
-        let { data: teamData, error: teamError } = await whereLab(
-          supabase.from("teams").select("*").eq("name", teamName),
-          labNum,
-        ).single();
-
-        if (teamError && teamError.code === "PGRST116") {
-          const { data, error } = await supabase
-            .from("teams")
-            .insert({ name: teamName, score: 0, lab: labNum })
-            .select()
-            .single();
-          if (error) throw error;
-          teamData = data;
-        } else if (teamError) {
-          throw teamError;
-        }
-
-        const { data: playerData, error: playerError } = await supabase
-          .from("players")
-          .insert({ name: playerName, team_id: teamData.id })
-          .select()
-          .single();
-
-        if (playerError) throw playerError;
-
-        targetPlayer.id = playerData.id;
-        targetTeam.id = teamData.id;
-      } catch (err) {
-        console.error("Database connection error:", err);
+    if (IS_MOCK_MODE) {
+      const assigned = MOCK_TEAMS.find(
+        (t) =>
+          (t.participant1_name && t.participant1_name.toLowerCase().trim() === trimmed) ||
+          (t.participant2_name && t.participant2_name.toLowerCase().trim() === trimmed)
+      );
+      if (assigned) {
+        return { isAssigned: true, teamName: assigned.name };
       }
+      return null;
     }
 
-    // Persist immediately in localStorage
+    try {
+      // 1. Direct check in players table
+      const { data: players } = await supabase
+        .from("players")
+        .select("id, name, team_id, teams:team_id(id, name)")
+        .ilike("name", candidateName.trim())
+        .limit(1);
+
+      if (players && players.length > 0) {
+        const teamName = players[0].teams?.name || `Squad #${players[0].team_id}`;
+        return { isAssigned: true, teamName };
+      }
+
+      // 2. Direct check in candidates table
+      const { data: cand } = await supabase
+        .from("candidates")
+        .select("team_name, team_id")
+        .ilike("name", candidateName.trim())
+        .limit(1);
+
+      if (cand && cand.length > 0 && (cand[0].team_name || cand[0].team_id)) {
+        return {
+          isAssigned: true,
+          teamName: cand[0].team_name || `Squad #${cand[0].team_id}`,
+        };
+      }
+    } catch (e) {
+      console.warn("Error checking participant assignment:", e);
+    }
+
+    return null;
+  };
+
+  const generatePasskey = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let key = "WS-";
+    for (let i = 0; i < 4; i++) {
+      key += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return key;
+  };
+
+  const startForwardSequence = (targetPlayer, targetTeam) => {
+    setIsSubmitting(true);
+    // Explicitly reset any stale contestant dropdown choices so active participant identity remains pure
+    setSelectedP1(null);
+    setSelectedP2(null);
     localStorage.setItem("playerData", JSON.stringify(targetPlayer));
     localStorage.setItem("teamData", JSON.stringify(targetTeam));
     try {
@@ -403,8 +717,388 @@ export default function JoinGame({
     }, 10300);
   };
 
-  const onSubmit = (data) => {
-    executeJoin(data.playerName.trim(), data.teamName.trim(), parseInt(data.lab, 10));
+  // ===========================================================================
+  // REGISTRATION FLOW WITH UNIQUE SECRET PASSKEY
+  // ===========================================================================
+  const executeJoin = async (p1, p2, teamName, labNum) => {
+    setIsSubmitting(true);
+    setP1Error("");
+    setTeamNameError("");
+
+    if (!p1) {
+      setP1Error("Contestant 1 is required. Please search and select your registered name.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (p2 && p1.name.toLowerCase().trim() === p2.name.toLowerCase().trim()) {
+      setP2Error("Contestant 1 and Contestant 2 cannot be the same person. Each squad must have distinct members.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!teamName || teamName.trim().length < 2) {
+      setTeamNameError("Team name must be at least 2 characters.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    const trimmedTeam = teamName.trim();
+
+    // STRICT VALIDATION 1: Enforce strictly unique team name
+    const isUnique = await validateTeamNameUniqueness(trimmedTeam);
+    if (!isUnique) {
+      setTeamNameError(
+        `Team name "${trimmedTeam}" is already registered. Every squad must have a unique team name.`
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
+    // STRICT VALIDATION 2: Verify Contestant 1 is NOT already registered in any squad
+    const p1Existing = await checkParticipantAssignment(p1.name);
+    if (p1Existing) {
+      setP1Error(
+        `Contestant "${p1.name}" is already registered in squad "${p1Existing.teamName}". Each participant can belong to only ONE squad.`
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
+    // STRICT VALIDATION 3: Verify Contestant 2 is NOT already registered in any squad
+    if (p2) {
+      const p2Existing = await checkParticipantAssignment(p2.name);
+      if (p2Existing) {
+        setP2Error(
+          `Contestant "${p2.name}" is already registered in squad "${p2Existing.teamName}". Each participant can belong to only ONE squad.`
+        );
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    const passkey = generatePasskey();
+
+    const targetTeam = {
+      id: "team-" + Date.now(),
+      name: trimmedTeam,
+      passkey: passkey,
+      lab: labNum,
+      score: 0,
+      codections_score: 0,
+      participant1_score: 0,
+      participant2_score: 0,
+      bidding_score: 0,
+      r1_web_total: 0,
+      r1_total_score: 0,
+      r2_total_score: 0,
+      grand_total_score: 0,
+      total_score: 0,
+      participant1_name: p1.name,
+      participant2_name: p2?.name || null,
+    };
+
+    const targetPlayer = {
+      id: "player-" + Date.now(),
+      name: p1.name,
+      participantNumber: 1,
+      participant1: p1.name,
+      participant2: p2?.name || null,
+    };
+
+    if (!IS_MOCK_MODE) {
+      try {
+        // Attempt full insert with all columns
+        let { data: teamData, error: teamError } = await supabase
+          .from("teams")
+          .insert({
+            name: trimmedTeam,
+            passkey: passkey,
+            score: 0,
+            codections_score: 0,
+            participant1_score: 0,
+            participant2_score: 0,
+            bidding_score: 0,
+            total_score: 0,
+            lab: labNum,
+            player_count: p2 ? 2 : 1,
+            participant1_name: p1.name,
+            participant2_name: p2?.name || null,
+          })
+          .select()
+          .single();
+
+        if (teamError) {
+          console.warn("Retrying team insert with base columns:", teamError.message);
+          // Fallback to base columns that always exist in Supabase
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from("teams")
+            .insert({
+              name: trimmedTeam,
+              score: 0,
+              lab: labNum,
+              player_count: p2 ? 2 : 1,
+            })
+            .select()
+            .single();
+
+          if (fallbackError) throw fallbackError;
+          teamData = fallbackData;
+        }
+
+        if (!teamData?.id) {
+          throw new Error("Team record could not be confirmed in database.");
+        }
+
+        targetTeam.id = teamData.id;
+
+        // Securely store passkey locally so passkey auth works regardless of Supabase columns
+        try {
+          localStorage.setItem("websitica_passkey_" + trimmedTeam.toLowerCase(), passkey);
+          localStorage.setItem("websitica_passkey_id_" + teamData.id, passkey);
+        } catch (storageErr) {}
+
+        // Insert participant 1 into players table
+        const { data: playerData, error: playerError } = await supabase
+          .from("players")
+          .insert({ name: p1.name, team_id: teamData.id })
+          .select()
+          .single();
+
+        if (playerData) {
+          targetPlayer.id = playerData.id;
+        }
+
+        // Insert participant 2 if present
+        if (p2) {
+          await supabase
+            .from("players")
+            .insert({ name: p2.name, team_id: teamData.id });
+        }
+
+        // Update candidate records in database with team assignment
+        try {
+          await supabase
+            .from("candidates")
+            .update({ team_id: teamData.id, team_name: trimmedTeam })
+            .ilike("name", p1.name);
+
+          if (p2) {
+            await supabase
+              .from("candidates")
+              .update({ team_id: teamData.id, team_name: trimmedTeam })
+              .ilike("name", p2.name);
+          }
+        } catch (candErr) {
+          console.warn("Could not sync candidate team status:", candErr);
+        }
+
+        // Immediately lock candidates in local state so dropdown reflects assignment
+        setCandidates((prev) =>
+          prev.map((c) => {
+            const match1 = c.name.toLowerCase().trim() === p1.name.toLowerCase().trim();
+            const match2 = p2 && c.name.toLowerCase().trim() === p2.name.toLowerCase().trim();
+            if (match1 || match2) {
+              return { ...c, team_id: teamData.id, team_name: trimmedTeam };
+            }
+            return c;
+          })
+        );
+      } catch (err) {
+        console.error("Database registration error:", err);
+        setTeamNameError("Failed to register squad in database: " + (err.message || "Network error. Please try again."));
+        setIsSubmitting(false);
+        return;
+      }
+    } else {
+      MOCK_TEAMS.push(targetTeam);
+    }
+
+    setIsSubmitting(false);
+
+    // Keep the user in a logged out state so they must log in with their passkey
+    try {
+      localStorage.removeItem("playerData");
+      localStorage.removeItem("teamData");
+      sessionStorage.removeItem("inWaitingRoom");
+    } catch (e) {}
+    setActivePlayer(null);
+    setActiveTeam(null);
+
+    // Present the "Squad Registered Successfully" dialog with passkey
+    setRegisteredSuccessData({
+      team: targetTeam,
+      player: targetPlayer,
+      passkey: passkey,
+    });
+  };
+
+  const handleGoToLoginAfterRegistration = () => {
+    if (!registeredSuccessData) return;
+    const registeredName = registeredSuccessData.team.name;
+    const registeredKey = registeredSuccessData.passkey;
+    const registeredTeam = registeredSuccessData.team;
+    setRegisteredSuccessData(null);
+    setEntryMode("login");
+    setLoginTeamName(registeredName);
+    setLoginPasskeyInput(registeredKey);
+    // Seamlessly authenticate the newly registered squad so creator can immediately choose their contestant slot
+    setVerifiedTeam(registeredTeam);
+    setActiveParticipantNum(1);
+    setLoginError("");
+    setSelectedP1(null);
+    setSelectedP2(null);
+    setTeamNameInput("");
+  };
+
+  // ===========================================================================
+  // SQUAD AUTHENTICATION & LOGIN WITH PASSKEY
+  // ===========================================================================
+  const handleVerifySquadLogin = async () => {
+    setLoginError("");
+    const trimmedName = loginTeamName.trim();
+    const trimmedKey = loginPasskeyInput.trim().toUpperCase();
+
+    if (!trimmedName) {
+      setLoginError("Please enter your team squad name.");
+      return;
+    }
+    if (!trimmedKey) {
+      setLoginError("Please enter your secret squad passkey.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      let foundTeam = null;
+
+      if (IS_MOCK_MODE) {
+        foundTeam = MOCK_TEAMS.find(
+          (t) =>
+            t.name.toLowerCase() === trimmedName.toLowerCase() &&
+            (!t.passkey || t.passkey.toUpperCase() === trimmedKey)
+        );
+      } else {
+        const { data, error } = await supabase
+          .from("teams")
+          .select("*")
+          .ilike("name", trimmedName)
+          .limit(1)
+          .maybeSingle();
+
+        if (error || !data) {
+          setLoginError(`Squad "${trimmedName}" not found. Please verify spelling or register.`);
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Expected passkey from DB column or localStorage fallback
+        let expectedPasskey = data.passkey;
+        if (!expectedPasskey && typeof window !== "undefined") {
+          expectedPasskey =
+            localStorage.getItem("websitica_passkey_" + trimmedName.toLowerCase()) ||
+            localStorage.getItem("websitica_passkey_id_" + data.id);
+        }
+
+        if (expectedPasskey && expectedPasskey.trim().toUpperCase() !== trimmedKey) {
+          setLoginError("Incorrect secret passkey for this squad. Please check your credentials.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Ensure participants are attached to data for player selection
+        if (!data.participant1_name) {
+          try {
+            const { data: teamPlayers } = await supabase
+              .from("players")
+              .select("name")
+              .eq("team_id", data.id)
+              .order("id", { ascending: true });
+
+            if (teamPlayers && teamPlayers.length > 0) {
+              data.participant1_name = teamPlayers[0]?.name;
+              if (teamPlayers.length > 1) {
+                data.participant2_name = teamPlayers[1]?.name;
+              }
+            }
+          } catch (pErr) {
+            console.warn("Could not fetch players for team:", pErr);
+          }
+        }
+
+        if (!data.participant1_name) {
+          data.participant1_name = data.name;
+        }
+
+        foundTeam = data;
+      }
+
+      if (!foundTeam) {
+        setLoginError("Invalid squad name or passkey combination.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Verified successfully!
+      setVerifiedTeam(foundTeam);
+      setActiveParticipantNum(1);
+    } catch (err) {
+      console.error(err);
+      setLoginError("Failed to authenticate squad. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleProceedLoginToVenue = async () => {
+    if (!verifiedTeam) return;
+    setIsSubmitting(true);
+
+    const activeName =
+      activeParticipantNum === 2
+        ? verifiedTeam.participant2_name || "Contestant 2"
+        : verifiedTeam.participant1_name || verifiedTeam.name;
+
+    const targetPlayer = {
+      id: "player-" + Date.now(),
+      name: activeName,
+      participantNumber: activeParticipantNum,
+      participant1: verifiedTeam.participant1_name,
+      participant2: verifiedTeam.participant2_name,
+      team_name: verifiedTeam.name,
+    };
+
+    if (!IS_MOCK_MODE) {
+      try {
+        const { data: pData } = await supabase
+          .from("players")
+          .select("id")
+          .ilike("name", activeName)
+          .eq("team_id", verifiedTeam.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (pData?.id) {
+          targetPlayer.id = pData.id;
+        }
+      } catch (e) {}
+    }
+
+    // Clear stale registration states
+    setSelectedP1(null);
+    setSelectedP2(null);
+
+    startForwardSequence(targetPlayer, verifiedTeam);
+  };
+
+  const handleJoinSubmit = () => {
+    executeJoin(
+      selectedP1,
+      selectedP2,
+      teamNameInput,
+      parseInt(selectedLabOption, 10)
+    );
   };
 
   // ===========================================================================
@@ -413,6 +1107,9 @@ export default function JoinGame({
   // ===========================================================================
   const handleEjectCassette = () => {
     setIsSubmitting(false);
+    setSessionStatusInfo(null);
+    setMessage("");
+    setActiveSessionRunning(false);
     try {
       sessionStorage.removeItem("inWaitingRoom");
     } catch (e) {}
@@ -552,6 +1249,88 @@ export default function JoinGame({
         {/* ======================================================== */}
         <div className="w-full flex flex-col items-center relative min-h-[480px] justify-center">
 
+          {/* Registration Success Modal Overlay */}
+          {registeredSuccessData && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+              <div className="bg-white border-3 border-black shadow-brutal-lg max-w-md w-full p-6 relative animate-in fade-in zoom-in-95">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-5 h-5 text-[#FF6B35]" />
+                  <h3 className="font-syne font-black text-xl uppercase tracking-tight text-black">
+                    SQUAD REGISTERED SUCCESSFULLY!
+                  </h3>
+                </div>
+                <p className="text-xs text-gray-600 font-mono mb-4">
+                  Your squad has been registered in the database. You are currently <strong>logged out</strong>.
+                </p>
+
+                {/* Squad details badge */}
+                <div className="bg-[#FFFDF9] border-2 border-black p-3 mb-4 space-y-1.5 text-xs font-mono">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500 font-bold uppercase">SQUAD NAME:</span>
+                    <span className="font-black text-black font-syne text-sm uppercase">
+                      {registeredSuccessData.team.name}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500 font-bold uppercase">ARENA LAB:</span>
+                    <span className="font-bold text-black uppercase">
+                      {registeredSuccessData.team.lab === 2 ? "LAB 2 (SE LAB)" : "LAB 1 (OS LAB)"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500 font-bold uppercase">CONTESTANTS:</span>
+                    <span className="font-bold text-black uppercase">
+                      {registeredSuccessData.team.participant1_name}
+                      {registeredSuccessData.team.participant2_name ? ` & ${registeredSuccessData.team.participant2_name}` : " (Solo)"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Large Passkey Display */}
+                <div className="bg-[#FFD12E]/30 border-2 border-black p-3.5 mb-4 text-center">
+                  <span className="text-[10px] font-mono font-bold uppercase text-gray-700 block mb-1">
+                    SECRET SQUAD PASSKEY
+                  </span>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="font-mono text-2xl font-black text-black tracking-widest bg-white px-3 py-1 border-2 border-black shadow-brutal-sm">
+                      {registeredSuccessData.passkey}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (navigator?.clipboard) {
+                          navigator.clipboard.writeText(registeredSuccessData.passkey);
+                          setCopiedPasskey(true);
+                          setTimeout(() => setCopiedPasskey(false), 2000);
+                        }
+                      }}
+                      className="p-2 border-2 border-black bg-white hover:bg-gray-100 transition-colors cursor-pointer shadow-brutal-sm"
+                      title="Copy Passkey"
+                    >
+                      {copiedPasskey ? (
+                        <Check className="w-5 h-5 text-[#38A169]" />
+                      ) : (
+                        <Copy className="w-5 h-5 text-black" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-gray-600 font-mono mt-2">
+                    🔑 Copy and save this key! You must now enter this passkey on the login screen to access the arena.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGoToLoginAfterRegistration}
+                  className="w-full bg-[#FFD12E] hover:bg-[#FFDA58] text-black font-syne font-black text-sm py-3 px-4 border-2 border-black shadow-brutal active:translate-x-0.5 active:translate-y-0.5 uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>PROCEED TO SQUAD LOGIN 🔑</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ================================================================= */}
           {/* SCENE 1: FORM ↔ TAPE MORPH & UNMORPHING BACK TO FORM             */}
           {/* (Active during form, sealing, morphing, showing_tape, unmorphing) */}
@@ -688,7 +1467,7 @@ export default function JoinGame({
                   className="text-black text-[9px] font-mono font-black px-1.5 py-0.5 border border-black uppercase"
                 >
                   {isMorphing
-                    ? `LAB ${selectedLab || 1} • CASSETTE`
+                    ? `LAB ${currentLab} • CASSETTE`
                     : "PLAYER ONBOARDING"}
                 </motion.span>
               </div>
@@ -763,75 +1542,235 @@ export default function JoinGame({
                     </span>
                   </motion.div>
 
-                  {/* CONTESTANT NAME FIELD */}
-                  <div className={isMorphing ? "mb-1.5" : "mb-3"}>
-                    <label className={`block font-bold uppercase tracking-wider text-black ${
-                      isMorphing ? "text-[9px] mb-0.5" : "text-[11px] mb-1"
-                    }`}>
-                      {isMorphing ? "A 1: CONTESTANT" : "CONTESTANT NAME"}
-                    </label>
-                    <div className="relative">
-                      <input
-                        {...register("playerName")}
-                        placeholder="e.g. Alan Turing"
-                        disabled={isSubmitting || isUnmorphing}
-                        className={`w-full border-2 border-black bg-[#FFFDF9] px-3 py-2 font-mono text-sm font-bold text-black placeholder:text-gray-400 focus:bg-[#FFF9A6] focus:outline-none transition-opacity duration-700 ${
-                          isFormMode
-                            ? "opacity-100 pointer-events-auto"
-                            : isUnmorphing
-                            ? "opacity-100 pointer-events-none"
-                            : "opacity-0 pointer-events-none absolute inset-0"
-                        }`}
-                        autoComplete="off"
-                      />
-                      {isMorphing && (
-                        <div className="border-b border-black/40 pb-0.5 text-black font-black uppercase text-xs tracking-tight truncate flex items-center justify-between">
-                          <span>{watchedPlayer || "ALAN TURING"}</span>
-                          <span className="text-[8px] text-gray-500 font-bold">[PRINTED]</span>
-                        </div>
-                      )}
-                    </div>
-                    {errors.playerName && isFormMode && (
-                      <p className="text-[#E53E3E] text-xs font-bold mt-1">
-                        ⚠️ {errors.playerName.message}
-                      </p>
-                    )}
-                  </div>
+                  {/* CONTESTANT 1 & 2 SELECTION + TEAM NAME OR PASSKEY LOGIN */}
+                  {isFormMode ? (
+                    <div className="space-y-1">
+                      {/* Mode Switcher Tabs */}
+                      <div className="grid grid-cols-2 gap-1 mb-2.5 border-2 border-black p-0.5 bg-[#FFF9F3]">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEntryMode("register");
+                            setLoginError("");
+                          }}
+                          className={`py-1.5 text-[11px] font-syne font-black uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            entryMode === "register"
+                              ? "bg-[#FFD12E] text-black border border-black shadow-[1px_1px_0px_#101010]"
+                              : "text-gray-600 hover:text-black"
+                          }`}
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>REGISTER SQUAD</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEntryMode("login");
+                            setP1Error("");
+                            setTeamNameError("");
+                          }}
+                          className={`py-1.5 text-[11px] font-syne font-black uppercase transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                            entryMode === "login"
+                              ? "bg-[#C1F8FF] text-black border border-black shadow-[1px_1px_0px_#101010]"
+                              : "text-gray-600 hover:text-black"
+                          }`}
+                        >
+                          <KeyRound className="w-3.5 h-3.5" />
+                          <span>PASSKEY LOGIN</span>
+                        </button>
+                      </div>
 
-                  {/* TEAM NAME FIELD */}
-                  <div className={isMorphing ? "mb-1.5" : "mb-2"}>
-                    <label className={`block font-bold uppercase tracking-wider text-black ${
-                      isMorphing ? "text-[9px] mb-0.5" : "text-[11px] mb-1"
-                    }`}>
-                      {isMorphing ? "A 2: TEAM SQUAD" : "TEAM NAME"}
-                    </label>
-                    <div className="relative">
-                      <input
-                        {...register("teamName")}
-                        placeholder="e.g. Binary Beasts"
-                        disabled={isSubmitting || isUnmorphing}
-                        className={`w-full border-2 border-black bg-[#FFFDF9] px-3 py-2 font-mono text-sm font-bold text-black placeholder:text-gray-400 focus:bg-[#FFF9A6] focus:outline-none transition-opacity duration-700 ${
-                          isFormMode
-                            ? "opacity-100 pointer-events-auto"
-                            : isUnmorphing
-                            ? "opacity-100 pointer-events-none"
-                            : "opacity-0 pointer-events-none absolute inset-0"
-                        }`}
-                        autoComplete="off"
-                      />
-                      {isMorphing && (
-                        <div className="border-b border-black/40 pb-0.5 text-black font-black uppercase text-xs tracking-tight truncate flex items-center justify-between">
-                          <span>{watchedTeam || "BINARY BEASTS"}</span>
-                          <span className="text-[8px] text-gray-500 font-bold">[PRINTED]</span>
+                      {entryMode === "register" ? (
+                        <>
+                          {/* PARTICIPANT 1 (LEAD) */}
+                          <CandidateSelector
+                            label="CONTESTANT 1 (LEAD)"
+                            placeholder="Search your registered name..."
+                            selectedCandidate={selectedP1}
+                            onSelect={(cand) => {
+                              setSelectedP1(cand);
+                              setP1Error("");
+                            }}
+                            onClear={() => setSelectedP1(null)}
+                            candidates={candidates}
+                            excludeId={selectedP2?.id}
+                            disabled={isSubmitting || isUnmorphing}
+                            isRequired={true}
+                            error={p1Error}
+                          />
+
+                          {/* PARTICIPANT 2 (OPTIONAL SECOND MEMBER) */}
+                          <CandidateSelector
+                            label="CONTESTANT 2 (TEAMMATE)"
+                            placeholder="Search teammate's name (optional)..."
+                            selectedCandidate={selectedP2}
+                            onSelect={(cand) => setSelectedP2(cand)}
+                            onClear={() => setSelectedP2(null)}
+                            candidates={candidates}
+                            excludeId={selectedP1?.id}
+                            disabled={isSubmitting || isUnmorphing}
+                            isRequired={false}
+                          />
+
+                          {/* TEAM NAME FIELD */}
+                          <div className="mb-2">
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-[11px] font-bold uppercase tracking-wider text-black">
+                                TEAM SQUAD NAME <span className="text-[#E53E3E] font-black">*</span>
+                              </label>
+                              <span className="text-[9px] text-gray-500 font-mono">
+                                [STRICTLY UNIQUE]
+                              </span>
+                            </div>
+                            <input
+                              type="text"
+                              value={teamNameInput}
+                              onChange={(e) => {
+                                setTeamNameInput(e.target.value);
+                                setTeamNameError("");
+                              }}
+                              placeholder="e.g. Binary Beasts"
+                              disabled={isSubmitting || isUnmorphing}
+                              className="w-full border-2 border-black bg-[#FFFDF9] px-3 py-1.5 font-mono text-xs sm:text-sm font-bold text-black placeholder:text-gray-400 focus:bg-[#FFF9A6] focus:outline-none"
+                              autoComplete="off"
+                            />
+                            {teamNameError && (
+                              <p className="text-[#E53E3E] text-[11px] font-bold mt-1 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                                <span>{teamNameError}</span>
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        /* PASSKEY LOGIN VIEW */
+                        <div className="space-y-2.5">
+                          <div>
+                            <label className="block text-[11px] font-bold uppercase tracking-wider text-black mb-1">
+                              REGISTERED SQUAD NAME <span className="text-[#E53E3E] font-black">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={loginTeamName}
+                              onChange={(e) => {
+                                setLoginTeamName(e.target.value);
+                                setVerifiedTeam(null);
+                                setLoginError("");
+                              }}
+                              placeholder="e.g. Steam Coders"
+                              disabled={isSubmitting}
+                              className="w-full border-2 border-black bg-[#FFFDF9] px-3 py-1.5 font-mono text-xs sm:text-sm font-bold text-black placeholder:text-gray-400 focus:bg-[#FFF9A6] focus:outline-none"
+                              autoComplete="off"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold uppercase tracking-wider text-black mb-1">
+                              SECRET TEAM PASSKEY <span className="text-[#E53E3E] font-black">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              value={loginPasskeyInput}
+                              onChange={(e) => {
+                                setLoginPasskeyInput(e.target.value);
+                                setVerifiedTeam(null);
+                                setLoginError("");
+                              }}
+                              placeholder="e.g. WS-7K39"
+                              disabled={isSubmitting}
+                              className="w-full border-2 border-black bg-[#FFFDF9] px-3 py-1.5 font-mono text-xs sm:text-sm font-black uppercase text-black placeholder:text-gray-400 focus:bg-[#FFF9A6] focus:outline-none tracking-wider"
+                              autoComplete="off"
+                            />
+                          </div>
+
+                          {loginError && (
+                            <p className="text-[#E53E3E] text-[11px] font-bold flex items-center gap-1">
+                              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                              <span>{loginError}</span>
+                            </p>
+                          )}
+
+                          {/* Verified Team Active Contestant Selection */}
+                          {verifiedTeam && (
+                            <div className="p-2.5 border-2 border-black bg-[#9AE885]/20 animate-in fade-in">
+                              <div className="flex items-center gap-1.5 text-xs font-syne font-black text-[#2F855A] mb-1">
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>SQUAD AUTHENTICATED: {verifiedTeam.name}</span>
+                              </div>
+                              <p className="text-[10px] text-gray-700 font-mono mb-2">
+                                Choose who is playing this session (both teammates get a chance):
+                              </p>
+
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveParticipantNum(1)}
+                                  className={`p-2 border-2 border-black text-left text-xs font-bold transition-all cursor-pointer ${
+                                    activeParticipantNum === 1
+                                      ? "bg-[#FFD12E] shadow-[2px_2px_0px_#101010]"
+                                      : "bg-white opacity-80"
+                                  }`}
+                                >
+                                  <div className="text-[8px] uppercase text-gray-600 font-mono">
+                                    CONTESTANT 1
+                                  </div>
+                                  <div className="truncate text-black font-black">
+                                    {verifiedTeam.participant1_name || "Lead"}
+                                  </div>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  disabled={!verifiedTeam.participant2_name}
+                                  onClick={() => setActiveParticipantNum(2)}
+                                  className={`p-2 border-2 border-black text-left text-xs font-bold transition-all cursor-pointer ${
+                                    activeParticipantNum === 2
+                                      ? "bg-[#FE90E9] shadow-[2px_2px_0px_#101010]"
+                                      : "bg-white opacity-80"
+                                  } ${!verifiedTeam.participant2_name ? "cursor-not-allowed opacity-40" : ""}`}
+                                >
+                                  <div className="text-[8px] uppercase text-gray-600 font-mono">
+                                    CONTESTANT 2
+                                  </div>
+                                  <div className="truncate text-black font-black">
+                                    {verifiedTeam.participant2_name || "(Solo Team)"}
+                                  </div>
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                    {errors.teamName && isFormMode && (
-                      <p className="text-[#E53E3E] text-xs font-bold mt-1">
-                        ⚠️ {errors.teamName.message}
-                      </p>
-                    )}
-                  </div>
+                  ) : (
+                    /* CASSETTE PRINTED LABEL STRIP (DURING MORPHING / SEALING) */
+                    <div className="space-y-1.5 mb-1.5">
+                      <div>
+                        <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-wider mb-0.5 text-black">
+                          <span>A 1: CONTESTANT ({activePlayer?.participantNumber === 2 ? "CONTESTANT 2" : "CONTESTANT 1"})</span>
+                          <span className="bg-[#FFD12E] text-black px-1 text-[7px] font-black border border-black">
+                            {activePlayer?.participantNumber === 2 ? "P2" : "P1"}
+                          </span>
+                        </div>
+                        <div className="border-b border-black/40 pb-0.5 text-black font-black uppercase text-[11px] tracking-tight truncate flex items-center justify-between">
+                          <span>
+                            {activePlayer?.name || selectedP1?.name || "CONTESTANT"}
+                          </span>
+                          <span className="text-[7px] text-gray-500 font-bold">[PRINTED]</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="text-[8px] font-bold uppercase tracking-wider mb-0.5 text-black">
+                          A 2: TEAM SQUAD
+                        </div>
+                        <div className="border-b border-black/40 pb-0.5 text-black font-black uppercase text-[11px] tracking-tight truncate flex items-center justify-between">
+                          <span>{activeTeam?.name || teamNameInput || "SQUAD"}</span>
+                          <span className="text-[7px] text-gray-500 font-bold">[PRINTED]</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* CENTER TAPE WINDOW WITH ROTATING SPOOLS */}
                   <motion.div
@@ -875,65 +1814,87 @@ export default function JoinGame({
                       : { maxHeight: 280, opacity: 1, marginTop: 14 }
                   }
                   transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
-                  className="space-y-4"
+                  className="space-y-3"
                 >
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider mb-1 text-black">
-                      ALLOCATED COMPUTER LAB
-                    </label>
-                    {lab ? (
-                      <div className="border-2 border-black bg-[#C1F8FF] p-2 text-center font-mono font-black text-xs uppercase">
-                        ARENA LOCKED: LAB {lab}
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <button
-                          type="button"
-                          onClick={() => setValue("lab", "1")}
-                          disabled={isSubmitting}
-                          className={`py-2 font-mono text-xs font-black uppercase border-2 border-black transition-all cursor-pointer ${
-                            selectedLab === "1"
-                              ? "bg-[#FFD12E] text-black shadow-[2px_2px_0px_#101010]"
-                              : "bg-white text-gray-700 hover:bg-[#FFF9A6]"
-                          }`}
-                        >
-                          LAB 1 (OS LAB)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setValue("lab", "2")}
-                          disabled={isSubmitting}
-                          className={`py-2 font-mono text-xs font-black uppercase border-2 border-black transition-all cursor-pointer ${
-                            selectedLab === "2"
-                              ? "bg-[#FFD12E] text-black shadow-[2px_2px_0px_#101010]"
-                              : "bg-white text-gray-700 hover:bg-[#FFF9A6]"
-                          }`}
-                        >
-                          LAB 2 (SE LAB)
-                        </button>
-                      </div>
-                    )}
-                    {errors.lab && (
-                      <p className="text-[#E53E3E] text-xs font-bold mt-1">
-                        ⚠️ {errors.lab.message}
-                      </p>
-                    )}
-                  </div>
+                  {entryMode === "register" && (
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider mb-1 text-black">
+                        ALLOCATED COMPUTER LAB
+                      </label>
+                      {lab ? (
+                        <div className="border-2 border-black bg-[#C1F8FF] p-2 text-center font-mono font-black text-xs uppercase">
+                          ARENA LOCKED: LAB {lab}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedLabOption("1")}
+                            disabled={isSubmitting}
+                            className={`py-2 font-mono text-xs font-black uppercase border-2 border-black transition-all cursor-pointer ${
+                              selectedLabOption === "1"
+                                ? "bg-[#FFD12E] text-black shadow-[2px_2px_0px_#101010]"
+                                : "bg-white text-gray-700 hover:bg-[#FFF9A6]"
+                            }`}
+                          >
+                            LAB 1 (OS LAB)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedLabOption("2")}
+                            disabled={isSubmitting}
+                            className={`py-2 font-mono text-xs font-black uppercase border-2 border-black transition-all cursor-pointer ${
+                              selectedLabOption === "2"
+                                ? "bg-[#FFD12E] text-black shadow-[2px_2px_0px_#101010]"
+                                : "bg-white text-gray-700 hover:bg-[#FFF9A6]"
+                            }`}
+                          >
+                            LAB 2 (SE LAB)
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-                  <button
-                    type="button"
-                    onClick={handleSubmit(onSubmit)}
-                    disabled={isSubmitting}
-                    className="w-full bg-[#FFD12E] hover:bg-[#FFDA58] text-black font-syne font-black text-base py-3 px-4 border-2 border-black shadow-[4px_4px_0px_#101010] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_#101010] transition-all uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-85 disabled:cursor-not-allowed"
-                  >
-                    {isSealing ? (
-                      <span className="flex items-center gap-2 animate-pulse">
-                        <span>⚙️ ENCODING &amp; PRINTING TAPE...</span>
-                      </span>
-                    ) : (
-                      <span>INSERT CASSETTE &amp; PLAY ▶</span>
-                    )}
-                  </button>
+                  {entryMode === "register" ? (
+                    <button
+                      type="button"
+                      onClick={handleJoinSubmit}
+                      disabled={isSubmitting}
+                      className="w-full bg-[#FFD12E] hover:bg-[#FFDA58] text-black font-syne font-black text-base py-3 px-4 border-2 border-black shadow-[4px_4px_0px_#101010] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_#101010] transition-all uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer disabled:opacity-85 disabled:cursor-not-allowed"
+                    >
+                      {isSealing ? (
+                        <span className="flex items-center gap-2 animate-pulse">
+                          <span>⚙️ ENCODING &amp; PRINTING TAPE...</span>
+                        </span>
+                      ) : (
+                        <span>REGISTER SQUAD &amp; GET PASSKEY ▶</span>
+                      )}
+                    </button>
+                  ) : (
+                    <div>
+                      {verifiedTeam ? (
+                        <button
+                          type="button"
+                          onClick={handleProceedLoginToVenue}
+                          disabled={isSubmitting}
+                          className="w-full bg-[#9AE885] hover:bg-[#85DE6E] text-black font-syne font-black text-base py-3 px-4 border-2 border-black shadow-[4px_4px_0px_#101010] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_#101010] transition-all uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <span>INSERT CASSETTE &amp; ENTER ARENA ▶</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleVerifySquadLogin}
+                          disabled={isSubmitting}
+                          className="w-full bg-[#C1F8FF] hover:bg-[#A6F1FF] text-black font-syne font-black text-base py-3 px-4 border-2 border-black shadow-[4px_4px_0px_#101010] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_#101010] transition-all uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <KeyRound className="w-5 h-5 text-black" />
+                          <span>AUTHENTICATE SQUAD PASSKEY 🔑</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </motion.div>
 
                 {/* Form Footer Strip */}
@@ -1058,7 +2019,7 @@ export default function JoinGame({
                     {/* Top Standby Header Tags */}
                     <div className="flex flex-wrap sm:flex-nowrap justify-between items-center gap-1.5 border-b-2 border-black pb-3 mb-4 sm:mb-5 text-[10px] sm:text-xs font-bold w-full">
                       <span className="bg-[#FFD12E] border-2 border-black px-2 py-0.5 shadow-[2px_2px_0px_#101010] text-black">
-                        STANDBY • LAB {activeTeam?.lab || selectedLab || 1}
+                        STANDBY • LAB {activeTeam?.lab || currentLab}
                       </span>
                       <span className="text-black/80 font-bold uppercase tracking-wider text-[10px] sm:text-[11px]">
                         WEBSITICA • CODECTIONS
@@ -1070,20 +2031,30 @@ export default function JoinGame({
 
                     {/* Contestant & Team Banner */}
                     <div className="border-2 border-black bg-white p-3 sm:p-4 mb-4 sm:mb-5 shadow-[3px_3px_0px_#101010] flex items-center justify-between w-full">
-                      <div>
-                        <p className="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                          CONTESTANT
+                      <div className="truncate mr-2">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <p className="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            ACTIVE CONTESTANT
+                          </p>
+                          <span className="bg-[#FFD12E] text-black text-[9px] font-mono font-black px-1.5 py-0.2 border border-black uppercase">
+                            {activePlayer?.participantNumber === 2 ? "CONTESTANT 2" : "CONTESTANT 1"}
+                          </span>
+                        </div>
+                        <p className="font-syne text-sm sm:text-base font-black text-black uppercase truncate">
+                          {activePlayer?.name || "CONTESTANT"}
                         </p>
-                        <p className="font-syne text-lg sm:text-xl font-bold text-black uppercase mt-0.5 truncate max-w-[140px] sm:max-w-none">
-                          {activePlayer?.name || watchedPlayer || "CONTESTANT"}
-                        </p>
+                        {(activePlayer?.participantNumber === 2 ? activePlayer?.participant1 : activePlayer?.participant2) && (
+                          <p className="text-[10px] font-mono text-gray-600 mt-0.5 truncate">
+                            Teammate: <span className="font-bold text-black">{activePlayer?.participantNumber === 2 ? activePlayer?.participant1 : activePlayer?.participant2}</span>
+                          </p>
+                        )}
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex-shrink-0">
                         <p className="text-[9px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                           TEAM SQUAD
                         </p>
                         <p className="text-[11px] sm:text-xs font-black text-black bg-[#C1F8FF] border border-black px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-[2px_2px_0px_#101010] uppercase inline-block mt-0.5 truncate max-w-[130px] sm:max-w-none">
-                          {activeTeam?.name || watchedTeam || "TEAM"}
+                          {activeTeam?.name || teamNameInput || "TEAM"}
                         </p>
                       </div>
                     </div>
@@ -1374,7 +2345,7 @@ export default function JoinGame({
                                 <span className="tracking-wider text-gray-200">[REC 01 // SIDE A]</span>
                               </div>
                               <span className="text-black text-[9px] font-mono font-black px-1.5 py-0.5 border border-black uppercase bg-[#FFD12E]">
-                                LAB {selectedLab || 1} • CASSETTE
+                                LAB {currentLab} • CASSETTE
                               </span>
                             </div>
 
@@ -1394,11 +2365,13 @@ export default function JoinGame({
 
                                 {/* Contestant Line */}
                                 <div className="mb-1.5">
-                                  <div className="text-[9px] font-bold uppercase tracking-wider mb-0.5 text-black">
-                                    A 1: CONTESTANT
+                                  <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-wider mb-0.5 text-black">
+                                    <span>A 1: CONTESTANT ({activePlayer?.participantNumber === 2 ? "P2" : "P1"})</span>
                                   </div>
                                   <div className="border-b border-black/40 pb-0.5 text-black font-black uppercase text-xs tracking-tight truncate flex items-center justify-between">
-                                    <span>{watchedPlayer || "ALAN TURING"}</span>
+                                    <span>
+                                      {activePlayer?.name || "ALAN TURING"}
+                                    </span>
                                     <span className="text-[8px] text-gray-500 font-bold">[PRINTED]</span>
                                   </div>
                                 </div>
@@ -1409,7 +2382,7 @@ export default function JoinGame({
                                     A 2: TEAM SQUAD
                                   </div>
                                   <div className="border-b border-black/40 pb-0.5 text-black font-black uppercase text-xs tracking-tight truncate flex items-center justify-between">
-                                    <span>{watchedTeam || "BINARY BEASTS"}</span>
+                                    <span>{activeTeam?.name || teamNameInput || "BINARY BEASTS"}</span>
                                     <span className="text-[8px] text-gray-500 font-bold">[PRINTED]</span>
                                   </div>
                                 </div>
@@ -1615,14 +2588,20 @@ export default function JoinGame({
                       className="w-full flex flex-col items-center overflow-hidden mt-3"
                     >
                       <h2 className="font-syne text-2xl sm:text-3xl font-black text-black tracking-tight uppercase mt-1">
-                        WARMING UP TAPE...
+                        {sessionStatusInfo?.type === "completed"
+                          ? "SESSION COMPLETED"
+                          : "WARMING UP TAPE..."}
                       </h2>
                       <p className="text-xs font-semibold text-gray-600 mt-1 max-w-xs">
-                        The puzzle arena will open automatically when the round begins.
+                        {sessionStatusInfo?.type === "completed"
+                          ? "Your round score has been registered in the database."
+                          : "The puzzle arena will open automatically when the round begins."}
                       </p>
-                      <div className="mt-4 border-2 border-black bg-[#FE90E9] px-4 py-1 font-mono text-xs sm:text-sm font-bold shadow-[2px_2px_0px_#101010] text-black">
-                        QUEUE TIMER: {Math.floor(waitingTime / 60)}:{(waitingTime % 60).toString().padStart(2, "0")}
-                      </div>
+                      {sessionStatusInfo?.type !== "completed" && (
+                        <div className="mt-4 border-2 border-black bg-[#FE90E9] px-4 py-1 font-mono text-xs sm:text-sm font-bold shadow-[2px_2px_0px_#101010] text-black">
+                          QUEUE TIMER: {Math.floor(waitingTime / 60)}:{(waitingTime % 60).toString().padStart(2, "0")}
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </motion.div>
@@ -1641,17 +2620,29 @@ export default function JoinGame({
                     transition={{ duration: 0.55, ease: "easeOut" }}
                     className="w-full overflow-hidden space-y-3"
                   >
-                    {message && (
-                      <div className="mb-3 p-3 border-2 border-black bg-[#C1F8FF] text-xs font-mono font-bold text-center shadow-[2px_2px_0px_#101010] text-black">
-                        ℹ️ {message}
+                    {sessionStatusInfo?.type === "completed" ? (
+                      <div className="p-4 border-2 border-black bg-[#9AE885]/35 text-center shadow-[4px_4px_0px_#101010] mb-2">
+                        <div className="flex items-center justify-center gap-2 text-black font-syne font-black text-sm uppercase mb-1">
+                          <CheckCircle2 className="w-5 h-5 text-[#227a3c]" />
+                          <span>SESSION COMPLETED ✓</span>
+                        </div>
+                        <p className="text-xs font-mono font-bold text-gray-800">
+                          {sessionStatusInfo.description || "You've completed the current session. Please wait for the next broadcast."}
+                        </p>
+                        {sessionStatusInfo.score !== undefined && (
+                          <div className="mt-2 inline-block bg-black text-[#9AE885] font-mono text-xs font-bold px-3 py-1 border border-black shadow-[2px_2px_0px_#101010]">
+                            FINAL SCORE: {sessionStatusInfo.score} PTS
+                          </div>
+                        )}
                       </div>
+                    ) : (
+                      <button
+                        onClick={handleStartGame}
+                        className="w-full bg-[#FFD12E] hover:bg-[#FFDA58] text-black font-syne font-black text-base py-3 px-4 border-2 border-black shadow-[4px_4px_0px_#101010] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_#101010] transition-all uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>▶ ENTER GAME ARENA ▶</span>
+                      </button>
                     )}
-                    <button
-                      onClick={handleStartGame}
-                      className="w-full bg-[#FFD12E] hover:bg-[#FFDA58] text-black font-syne font-black text-base py-3 px-4 border-2 border-black shadow-[4px_4px_0px_#101010] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_#101010] transition-all uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <span>▶ ENTER GAME ARENA ▶</span>
-                    </button>
 
                     <button
                       onClick={handleEjectCassette}

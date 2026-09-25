@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/client";
 import {
   CircleUserRound,
@@ -12,6 +13,8 @@ import {
   Disc3,
   Award,
   Flame,
+  LogOut,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { cn, whereLab } from "@/lib/utils";
@@ -67,6 +70,7 @@ const fallbackRibbonColors = [
 ];
 
 export default function PlayerGame({ player, team, onGameEnd }) {
+  const router = useRouter();
   const [currentSession, setCurrentSession] = useState(null);
   const [grid, setGrid] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -77,11 +81,96 @@ export default function PlayerGame({ player, team, onGameEnd }) {
   const [totalScore, setTotalScore] = useState(0);
   const [lives, setLives] = useState(MAX_LIVES);
   const [shakeHeart, setShakeHeart] = useState(false);
+  const [teamScores, setTeamScores] = useState({ p1: 0, p2: 0, total: 0 });
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [isQuitting, setIsQuitting] = useState(false);
+  const isSubmittingRef = useRef(false);
+
+  const getAttemptKey = (sessionId) => {
+    const sId = sessionId || currentSession?.id;
+    if (!sId) return null;
+    const playerKey = `p${player?.participantNumber || 1}_${player?.name || ""}`;
+    return `codections_attempt_${sId}_${playerKey}`;
+  };
+
+  const saveAttemptState = (partial) => {
+    const key = getAttemptKey();
+    if (!key || typeof window === "undefined") return;
+    try {
+      const existing = JSON.parse(sessionStorage.getItem(key) || "{}");
+      sessionStorage.setItem(key, JSON.stringify({ ...existing, ...partial }));
+    } catch (e) {}
+  };
+
+  const clearAttemptState = (sessionId) => {
+    const key = getAttemptKey(sessionId);
+    if (!key || typeof window === "undefined") return;
+    try {
+      sessionStorage.removeItem(key);
+    } catch (e) {}
+  };
+
+  const handleConfirmQuit = async () => {
+    setIsQuitting(true);
+    clearAttemptState(currentSession?.id);
+    try {
+      await endGame(totalScore);
+    } catch (e) {
+      console.warn("Error during quit end game:", e);
+    }
+
+    try {
+      sessionStorage.setItem("inWaitingRoom", "true");
+    } catch (e) {}
+
+    setShowQuitConfirm(false);
+    setIsQuitting(false);
+
+    if (onGameEnd) {
+      onGameEnd();
+    } else if (router) {
+      router.push("/waiting");
+    } else if (typeof window !== "undefined") {
+      window.location.href = "/waiting";
+    }
+  };
+
+  // Prevent accidental browser reload / tab close during active quiz playback
+  useEffect(() => {
+    if (gameStatus !== "active") return;
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [gameStatus]);
 
   useEffect(() => {
     checkAndStartGame();
+
+    // Fetch initial scores from teams record
+    const fetchTeamScores = async () => {
+      if (IS_MOCK_MODE || !team?.id) return;
+      try {
+        const { data } = await supabase
+          .from("teams")
+          .select("participant1_score, participant2_score, codections_score, score")
+          .eq("id", team.id)
+          .single();
+        if (data) {
+          setTeamScores({
+            p1: data.participant1_score || 0,
+            p2: data.participant2_score || 0,
+            total: data.codections_score || data.score || 0,
+          });
+        }
+      } catch (e) {}
+    };
+    fetchTeamScores();
+
     if (!IS_MOCK_MODE) {
-      const subscription = supabase
+      const sessionSub = supabase
         .channel("quiz_sessions")
         .on(
           "postgres_changes",
@@ -90,10 +179,36 @@ export default function PlayerGame({ player, team, onGameEnd }) {
         )
         .subscribe();
 
+      const teamSub = team?.id
+        ? supabase
+            .channel(`team_score_sync_${team.id}`)
+            .on(
+              "postgres_changes",
+              {
+                event: "UPDATE",
+                schema: "public",
+                table: "teams",
+                filter: `id=eq.${team.id}`,
+              },
+              (payload) => {
+                if (payload.new) {
+                  setTeamScores({
+                    p1: payload.new.participant1_score || 0,
+                    p2: payload.new.participant2_score || 0,
+                    total: payload.new.codections_score || payload.new.score || 0,
+                  });
+                }
+              }
+            )
+            .subscribe()
+        : null;
+
       return () => {
-        supabase.removeChannel(subscription);
+        supabase.removeChannel(sessionSub);
+        if (teamSub) supabase.removeChannel(teamSub);
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -106,6 +221,7 @@ export default function PlayerGame({ player, team, onGameEnd }) {
       endGame();
     }
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameStatus, timeLeft]);
 
   const checkAndStartGame = async () => {
@@ -126,20 +242,58 @@ export default function PlayerGame({ player, team, onGameEnd }) {
     if (sessionData) {
       setCurrentSession(sessionData);
 
-      // Check if player has already submitted for this session
-      const { data: submissionData } = await supabase
-        .from("submissions")
-        .select("*")
-        .eq("player_id", player.id)
-        .eq("session_id", sessionData.id)
-        .limit(1)
-        .single();
+      // 1. Check local session completion cache per individual contestant
+      const playerKey = `completed_session_${sessionData.id}_p${player?.participantNumber || 1}_${player?.name || ""}`;
+      const localStatus =
+        typeof window !== "undefined"
+          ? localStorage.getItem(playerKey) || sessionStorage.getItem(playerKey)
+          : null;
 
-      if (submissionData) {
-        // Player has already completed this session, return to waiting room
+      if (localStatus === "completed" || localStatus === "true") {
+        onGameEnd();
+        return;
+      }
+
+      // 2. Check if THIS contestant has already submitted for this session in database
+      let currentPID = player?.id;
+      if (!currentPID || (typeof currentPID === "string" && currentPID.startsWith("player-"))) {
+        try {
+          const { data: pRec } = await supabase
+            .from("players")
+            .select("id")
+            .eq("team_id", team?.id)
+            .ilike("name", player?.name || "")
+            .limit(1)
+            .maybeSingle();
+          if (pRec?.id) currentPID = pRec.id;
+        } catch (e) {}
+      }
+
+      let hasSubmitted = false;
+      try {
+        if (currentPID && !String(currentPID).startsWith("player-")) {
+          const { data: playerSubs } = await supabase
+            .from("submissions")
+            .select("id, score")
+            .eq("player_id", currentPID)
+            .eq("session_id", sessionData.id)
+            .limit(1);
+          if (playerSubs && playerSubs.length > 0) {
+            hasSubmitted = true;
+          }
+        }
+      } catch (e) {
+        console.warn("Error checking submissions in PlayerGame:", e);
+      }
+
+      if (hasSubmitted) {
+        try {
+          localStorage.setItem(playerKey, "completed");
+          sessionStorage.setItem(playerKey, "completed");
+        } catch (e) {}
         onGameEnd();
       } else {
-        // Player hasn't completed this session, start the game
+        // Player hasn't completed this session yet, start the game!
         startGame(sessionData);
       }
     } else {
@@ -178,13 +332,60 @@ export default function PlayerGame({ player, team, onGameEnd }) {
   };
 
   const startGame = async (sessionData) => {
+    const key = getAttemptKey(sessionData?.id);
+    let savedAttempt = null;
+    if (key && typeof window !== "undefined") {
+      try {
+        const raw = sessionStorage.getItem(key);
+        if (raw) savedAttempt = JSON.parse(raw);
+      } catch (e) {}
+    }
+
+    if (savedAttempt && savedAttempt.startTime) {
+      const elapsed = Math.floor((Date.now() - savedAttempt.startTime) / 1000);
+      const remaining = Math.max(0, QUESTION_DURATION - elapsed);
+      if (remaining <= 0) {
+        clearAttemptState(sessionData?.id);
+        setGameStatus("completed");
+        endGame(savedAttempt.score || 0);
+        return;
+      }
+      if (savedAttempt.grid && savedAttempt.grid.length > 0) {
+        setGrid(savedAttempt.grid);
+      } else {
+        await fetchNewGrid(sessionData);
+      }
+      setGameStatus("active");
+      setTimeLeft(remaining);
+      setQuestionStartTime(savedAttempt.startTime);
+      setCompletedCategories(savedAttempt.completedCategories || []);
+      setTotalScore(savedAttempt.score || 0);
+      setLives(savedAttempt.lives !== undefined ? savedAttempt.lives : MAX_LIVES);
+      return;
+    }
+
+    const newStartTime = Date.now();
     await fetchNewGrid(sessionData);
     setGameStatus("active");
     setTimeLeft(QUESTION_DURATION);
-    setQuestionStartTime(Date.now());
+    setQuestionStartTime(newStartTime);
     setCompletedCategories([]);
     setTotalScore(0);
     setLives(MAX_LIVES);
+
+    if (key && typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(
+          key,
+          JSON.stringify({
+            startTime: newStartTime,
+            score: 0,
+            lives: MAX_LIVES,
+            completedCategories: [],
+          })
+        );
+      } catch (e) {}
+    }
   };
 
   const calculateScore = (responseTime) => {
@@ -287,6 +488,12 @@ export default function PlayerGame({ player, team, onGameEnd }) {
       setGrid(newGrid);
       setSelectedItems([]);
 
+      saveAttemptState({
+        score: newTotalScore,
+        completedCategories: newCompletedCategories,
+        grid: newGrid,
+      });
+
       if (newCompletedCategories.length === TOTAL_CATEGORIES) {
         endGame(newTotalScore);
       }
@@ -297,6 +504,7 @@ export default function PlayerGame({ player, team, onGameEnd }) {
         setShakeHeart(false);
       }, 500);
       setLives(newLives);
+      saveAttemptState({ lives: newLives });
 
       if (newLives === 0) {
         endGame(totalScore);
@@ -316,9 +524,11 @@ export default function PlayerGame({ player, team, onGameEnd }) {
       return;
     }
 
+    const participantNum = player?.participantNumber || 1;
+
     const { data: currentTeamData, error: fetchError } = await supabase
       .from("teams")
-      .select("score")
+      .select("score, bidding_score, participant1_score, participant2_score, codections_score, r1_web_total, r2_total_score")
       .eq("id", team.id)
       .limit(1)
       .single();
@@ -328,17 +538,47 @@ export default function PlayerGame({ player, team, onGameEnd }) {
       return;
     }
 
-    const newScore = (currentTeamData.score || 0) + scoreIncrement;
+    let p1 = currentTeamData?.participant1_score || 0;
+    let p2 = currentTeamData?.participant2_score || 0;
 
+    if (participantNum === 2) {
+      p2 += scoreIncrement;
+    } else {
+      p1 += scoreIncrement;
+    }
+
+    const newCodections = p1 + p2;
+    const biddingScore = currentTeamData?.bidding_score || 0;
+    const r1WebTotal = currentTeamData?.r1_web_total || 0;
+    const r1TotalScore = r1WebTotal + newCodections + biddingScore;
+    const r2Total = currentTeamData?.r2_total_score || 0;
+    const grandTotalScore = r1TotalScore + r2Total;
+
+    // Synchronize both codections_score, individual participant scores, and total_score
     const { error } = await supabase
       .from("teams")
-      .update({ score: newScore })
+      .update({
+        score: newCodections,
+        codections_score: newCodections,
+        participant1_score: p1,
+        participant2_score: p2,
+        r1_total_score: r1TotalScore,
+        grand_total_score: grandTotalScore,
+        total_score: r1TotalScore,
+      })
       .eq("id", team.id);
 
     if (error) {
-      console.error("Error updating team score:", error);
+      // Fallback in case migration columns are not yet applied in Supabase
+      console.warn("Fallback to legacy score column:", error.message);
+      await supabase
+        .from("teams")
+        .update({ score: newCodections })
+        .eq("id", team.id);
     } else {
-      console.log("Team score updated successfully");
+      console.log(
+        `Team score updated: P${participantNum} +${scoreIncrement}, total Codections = ${newCodections}`
+      );
     }
   };
 
@@ -348,27 +588,123 @@ export default function PlayerGame({ player, team, onGameEnd }) {
   };
 
   const submitResult = async (finalScore) => {
+    // Guard against duplicate execution (e.g. timeout + lives 0 at the same moment)
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
+    // 1. Store session completion per contestant so returning to lobby won't redirect back
+    const isFullCompletion = completedCategories.length === TOTAL_CATEGORIES;
+    const completionVal = isFullCompletion ? "completed" : "incomplete";
+
+    if (currentSession?.id) {
+      clearAttemptState(currentSession.id);
+      try {
+        const playerKey = `completed_session_${currentSession.id}_p${player?.participantNumber || 1}_${player?.name || ""}`;
+        localStorage.setItem(playerKey, completionVal);
+        sessionStorage.setItem(playerKey, completionVal);
+        localStorage.setItem(`${playerKey}_score`, String(finalScore));
+        localStorage.setItem(`${playerKey}_is_correct`, String(isFullCompletion));
+      } catch (e) {}
+    }
+
     if (IS_MOCK_MODE) {
       console.log("[MOCK] Game session completed. Score:", finalScore);
       return;
     }
 
-    if (!player || !team || !currentSession) {
-      console.error("Missing player, team, or session data");
+    if (!team || !currentSession) {
+      console.error("Missing team or session data");
       return;
     }
 
-    const { error } = await supabase.from("submissions").insert({
-      player_id: player.id,
-      team_id: team.id,
-      session_id: currentSession.id,
-      is_correct: completedCategories.length === TOTAL_CATEGORIES,
-      submitted_at: new Date().toISOString(),
-      score: finalScore,
-    });
+    let validPlayerId = player?.id;
+    if (!validPlayerId || (typeof validPlayerId === "string" && validPlayerId.startsWith("player-"))) {
+      try {
+        const { data: pData } = await supabase
+          .from("players")
+          .select("id")
+          .eq("team_id", team.id)
+          .ilike("name", player?.name || "")
+          .limit(1)
+          .maybeSingle();
+        if (pData?.id) validPlayerId = pData.id;
+        else validPlayerId = null;
+      } catch (e) {
+        validPlayerId = null;
+      }
+    }
 
-    if (error) {
-      console.error("Error submitting result:", error);
+    try {
+      const submissionPayload = {
+        team_id: team.id,
+        session_id: currentSession.id,
+        is_correct: completedCategories.length === TOTAL_CATEGORIES,
+        submitted_at: new Date().toISOString(),
+        score: finalScore,
+      };
+      if (validPlayerId) {
+        submissionPayload.player_id = validPlayerId;
+      }
+
+      const { error } = await supabase.from("submissions").insert(submissionPayload);
+
+      if (error) {
+        console.error("Error submitting result to database:", error);
+      }
+
+      // Mark session completion in local storage per player
+      try {
+        const playerKey = `completed_session_${currentSession.id}_p${player?.participantNumber || 1}_${player?.name || ""}`;
+        localStorage.setItem(playerKey, completionVal);
+        sessionStorage.setItem(playerKey, completionVal);
+        localStorage.setItem(`${playerKey}_score`, String(finalScore));
+        localStorage.setItem(`${playerKey}_is_correct`, String(isFullCompletion));
+      } catch (e) {}
+
+      // Automatically store and persist final Codections score directly to the team record in Supabase
+      try {
+        const participantNum = player?.participantNumber || 1;
+        const { data: teamRecord } = await supabase
+          .from("teams")
+          .select("participant1_score, participant2_score, codections_score, r1_web_total, bidding_score, r2_total_score")
+          .eq("id", team.id)
+          .single();
+
+        if (teamRecord) {
+          let p1 = teamRecord.participant1_score || 0;
+          let p2 = teamRecord.participant2_score || 0;
+          if (participantNum === 2) {
+            p2 = Math.max(p2, finalScore);
+          } else {
+            p1 = Math.max(p1, finalScore);
+          }
+          const totalCod = p1 + p2;
+          const r1Web = teamRecord.r1_web_total || 0;
+          const bidding = teamRecord.bidding_score || 0;
+          const r1Total = r1Web + totalCod + bidding;
+          const r2Total = teamRecord.r2_total_score || 0;
+          const grandTotal = r1Total + r2Total;
+
+          setTeamScores({ p1, p2, total: totalCod });
+
+          await supabase
+            .from("teams")
+            .update({
+              participant1_score: p1,
+              participant2_score: p2,
+              codections_score: totalCod,
+              score: totalCod,
+              r1_total_score: r1Total,
+              grand_total_score: grandTotal,
+              total_score: r1Total,
+            })
+            .eq("id", team.id);
+        }
+      } catch (errSync) {
+        console.warn("Could not final sync team score:", errSync);
+      }
+    } catch (err) {
+      console.error("Exception submitting result:", err);
     }
   };
 
@@ -517,7 +853,7 @@ export default function PlayerGame({ player, team, onGameEnd }) {
             <div>
               <div className="flex items-center gap-2">
                 <span className="bg-[#101010] text-[#FFF9F3] text-[10px] font-mono font-bold px-1.5 py-0.5 border border-black uppercase">
-                  CONTESTANT
+                  CONTESTANT {player?.participantNumber || 1}
                 </span>
                 <span className="bg-[#C1F8FF] text-black text-[10px] font-mono font-bold px-1.5 py-0.5 border border-black uppercase">
                   {team?.lab
@@ -533,6 +869,18 @@ export default function PlayerGame({ player, team, onGameEnd }) {
                   [{team?.name || "ALPHA"}]
                 </span>
               </h2>
+              {/* Teammate & Combined Scores Pill */}
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap font-mono text-[10px]">
+                <span className="bg-[#9AE885] border border-black px-1.5 py-0.2 font-bold">
+                  YOUR PTS: {player?.participantNumber === 2 ? teamScores.p2 : teamScores.p1}
+                </span>
+                <span className="bg-[#FE90E9] border border-black px-1.5 py-0.2 font-bold">
+                  TEAMMATE: {player?.participantNumber === 2 ? teamScores.p1 : teamScores.p2}
+                </span>
+                <span className="bg-[#FFD12E] border border-black px-1.5 py-0.2 font-black">
+                  SQUAD TOTAL: {teamScores.total}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -544,13 +892,26 @@ export default function PlayerGame({ player, team, onGameEnd }) {
             {renderLives()}
           </div>
 
-          {/* Right: Digital Timer */}
-          <div className="flex items-center gap-2 bg-[#101010] text-[#FFD12E] border-2 border-black px-4 py-2 shadow-[2px_2px_0px_#FF6B35]">
-            <Timer className="w-5 h-5 text-[#FF6B35] animate-pulse" />
-            <span className="font-mono font-black text-2xl tracking-widest">
-              {Math.floor(timeLeft / 60)}:
-              {(timeLeft % 60).toString().padStart(2, "0")}
-            </span>
+          {/* Right: Digital Timer & Quit Button */}
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 bg-[#101010] text-[#FFD12E] border-2 border-black px-4 py-2 shadow-[2px_2px_0px_#FF6B35]">
+              <Timer className="w-5 h-5 text-[#FF6B35] animate-pulse" />
+              <span className="font-mono font-black text-2xl tracking-widest">
+                {Math.floor(timeLeft / 60)}:
+                {(timeLeft % 60).toString().padStart(2, "0")}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowQuitConfirm(true)}
+              disabled={gameStatus === "completed" || isQuitting}
+              className="btn-brutal bg-white hover:bg-red-50 text-red-600 border-2 border-black px-3.5 py-2.5 font-mono font-black text-xs uppercase shadow-brutal flex items-center gap-1.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-50"
+              title="Quit quiz and return to waiting room"
+            >
+              <LogOut className="w-4 h-4 text-red-600" />
+              <span className="hidden sm:inline">QUIT QUIZ</span>
+            </button>
           </div>
         </div>
 
@@ -611,6 +972,16 @@ export default function PlayerGame({ player, team, onGameEnd }) {
                 <Shuffle className="w-4 h-4 text-black" /> SHUFFLE 🔀
               </button>
             </div>
+
+            {/* Quit Round Action */}
+            <button
+              type="button"
+              onClick={() => setShowQuitConfirm(true)}
+              disabled={gameStatus === "completed" || isQuitting}
+              className="btn-brutal w-full bg-white hover:bg-red-50 text-red-600 border-2 border-black font-syne font-black text-xs uppercase py-3 px-3 shadow-brutal flex items-center justify-center gap-2 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer disabled:opacity-50"
+            >
+              <LogOut className="w-4 h-4 text-red-600" /> QUIT QUIZ &amp; RETURN TO WAITING ROOM
+            </button>
 
             {/* Invente Logo Watermark Pill */}
             <div className="bg-[#FF6B35] text-white border-2 border-black p-3 shadow-brutal flex items-center justify-between text-xs font-mono font-bold">
@@ -684,6 +1055,54 @@ export default function PlayerGame({ player, team, onGameEnd }) {
                 >
                   RETURN TO LOBBY ▶
                 </button>
+              </div>
+            )}
+
+            {/* Quit Confirmation Modal */}
+            {showQuitConfirm && (
+              <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="card-brutal bg-white border-3 border-black shadow-brutal-lg max-w-md w-full p-6 sm:p-7 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center gap-2.5 text-red-600 border-b-2 border-black pb-3 mb-4">
+                    <AlertTriangle className="w-6 h-6 flex-shrink-0" />
+                    <h3 className="font-syne font-black text-xl uppercase tracking-tight text-black">
+                      QUIT QUIZ SESSION?
+                    </h3>
+                  </div>
+                  <p className="font-mono text-xs text-gray-700 leading-relaxed mb-4">
+                    Are you sure you want to stop this Codections round?
+                    <br /><br />
+                    Your current score of{" "}
+                    <strong className="text-black bg-[#9AE885] px-1.5 py-0.5 border border-black font-black">
+                      {totalScore} PTS
+                    </strong>{" "}
+                    will be saved to your squad record, and you will return to the waiting lounge.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-3 border-t border-dashed border-gray-300">
+                    <button
+                      type="button"
+                      onClick={() => setShowQuitConfirm(false)}
+                      className="btn-brutal w-full sm:w-1/2 bg-white hover:bg-gray-100 text-black border-2 border-black font-syne font-black text-xs uppercase py-3 shadow-brutal cursor-pointer text-center"
+                    >
+                      KEEP PLAYING
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmQuit}
+                      disabled={isQuitting}
+                      className="btn-brutal w-full sm:w-1/2 bg-red-600 hover:bg-red-700 text-white border-2 border-black font-syne font-black text-xs uppercase py-3 shadow-brutal flex items-center justify-center gap-1.5 cursor-pointer text-center disabled:opacity-50"
+                    >
+                      {isQuitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> EXITING...
+                        </>
+                      ) : (
+                        <>
+                          <LogOut className="w-4 h-4" /> YES, QUIT &amp; EXIT ▶
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
