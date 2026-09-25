@@ -2,10 +2,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/client";
 import { whereLab } from "@/lib/utils";
+import { useTeamLock } from "@/hooks/useTeamLock";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  MonitorX,
   Search,
   UserCheck,
   Users,
@@ -261,6 +263,9 @@ export default function JoinGame({
   );
   const [activePlayer, setActivePlayer] = useState(initialPlayer || null);
   const [activeTeam, setActiveTeam] = useState(initialTeam || null);
+
+  // One team = one screen; blocks a second browser on the same squad.
+  const teamLockState = useTeamLock(activeTeam?.id);
   const [waitingTime, setWaitingTime] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -1164,6 +1169,7 @@ export default function JoinGame({
   };
 
   const handleStartGame = () => {
+    if (teamLockState === "blocked") return;
     try {
       sessionStorage.setItem("inWaitingRoom", "true");
     } catch (e) {}
@@ -1690,7 +1696,7 @@ export default function JoinGame({
                             </p>
                           )}
 
-                          {/* Verified Team Active Contestant Selection */}
+                          {/* Verified Team - single shared session, both members play together */}
                           {verifiedTeam && (
                             <div className="p-2.5 border-2 border-black bg-[#9AE885]/20 animate-in fade-in">
                               <div className="flex items-center gap-1.5 text-xs font-syne font-black text-[#2F855A] mb-1">
@@ -1698,44 +1704,29 @@ export default function JoinGame({
                                 <span>SQUAD AUTHENTICATED: {verifiedTeam.name}</span>
                               </div>
                               <p className="text-[10px] text-gray-700 font-mono mb-2">
-                                Choose who is playing this session (both teammates get a chance):
+                                One shared screen &mdash; both teammates play this session together:
                               </p>
 
                               <div className="grid grid-cols-2 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setActiveParticipantNum(1)}
-                                  className={`p-2 border-2 border-black text-left text-xs font-bold transition-all cursor-pointer ${
-                                    activeParticipantNum === 1
-                                      ? "bg-[#FFD12E] shadow-[2px_2px_0px_#101010]"
-                                      : "bg-white opacity-80"
-                                  }`}
-                                >
+                                <div className="p-2 border-2 border-black text-left text-xs font-bold bg-[#FFD12E] shadow-[2px_2px_0px_#101010]">
                                   <div className="text-[8px] uppercase text-gray-600 font-mono">
-                                    CONTESTANT 1
+                                    TEAMMATE 1
                                   </div>
                                   <div className="truncate text-black font-black">
                                     {verifiedTeam.participant1_name || "Lead"}
                                   </div>
-                                </button>
+                                </div>
 
-                                <button
-                                  type="button"
-                                  disabled={!verifiedTeam.participant2_name}
-                                  onClick={() => setActiveParticipantNum(2)}
-                                  className={`p-2 border-2 border-black text-left text-xs font-bold transition-all cursor-pointer ${
-                                    activeParticipantNum === 2
-                                      ? "bg-[#FE90E9] shadow-[2px_2px_0px_#101010]"
-                                      : "bg-white opacity-80"
-                                  } ${!verifiedTeam.participant2_name ? "cursor-not-allowed opacity-40" : ""}`}
-                                >
+                                <div className={`p-2 border-2 border-black text-left text-xs font-bold shadow-[2px_2px_0px_#101010] ${
+                                  verifiedTeam.participant2_name ? "bg-[#FE90E9]" : "bg-white opacity-40"
+                                }`}>
                                   <div className="text-[8px] uppercase text-gray-600 font-mono">
-                                    CONTESTANT 2
+                                    TEAMMATE 2
                                   </div>
                                   <div className="truncate text-black font-black">
                                     {verifiedTeam.participant2_name || "(Solo Team)"}
                                   </div>
-                                </button>
+                                </div>
                               </div>
                             </div>
                           )}
@@ -2634,6 +2625,17 @@ export default function JoinGame({
                             FINAL SCORE: {sessionStatusInfo.score} PTS
                           </div>
                         )}
+                      </div>
+                    ) : teamLockState === "blocked" ? (
+                      <div className="p-4 border-2 border-black bg-[#FF6B35]/20 text-center shadow-[4px_4px_0px_#101010] mb-2">
+                        <div className="flex items-center justify-center gap-2 text-black font-syne font-black text-sm uppercase mb-1">
+                          <MonitorX className="w-5 h-5 text-[#FF6B35]" />
+                          <span>ALREADY IN PLAY</span>
+                        </div>
+                        <p className="text-xs font-mono font-bold text-gray-800">
+                          Your squad is already on another screen. This round is
+                          played together on one device.
+                        </p>
                       </div>
                     ) : (
                       <button
