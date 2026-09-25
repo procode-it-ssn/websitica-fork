@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,7 +8,12 @@ import { whereLab } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { IS_MOCK_MODE } from "@/lib/mockData";
+import {
+  IS_MOCK_MODE,
+  DEFAULT_MOCK_PLAYER,
+  DEFAULT_MOCK_TEAM,
+  MOCK_UPCOMING_SESSION,
+} from "@/lib/mockData";
 
 const schema = z.object({
   playerName: z.string().min(2, "Contestant name must be at least 2 characters"),
@@ -79,16 +84,28 @@ function CassetteReel({ size = 40, duration = 2.8, reverse = false, isSpinning =
   );
 }
 
-export default function JoinGame({ lab = null }) {
+export default function JoinGame({
+  lab = null,
+  initialPhase = null,
+  initialPlayer = null,
+  initialTeam = null,
+}) {
   // Cinematic Continuous Physical Interaction Lifecycle:
   // FORWARD:  form -> sealing -> morphing -> aligning -> inserting -> shrinking_player -> revealing_dashboard -> waiting
   // REVERSE:  waiting -> retracting_dashboard -> expanding_player -> ejecting -> showing_tape -> unmorphing -> form
-  const [animPhase, setAnimPhase] = useState("form");
-  const [insertionProgress, setInsertionProgress] = useState(0); // 0 -> 25 -> 50 -> 75 -> 100 (or reverse)
-  const [activePlayer, setActivePlayer] = useState(null);
-  const [activeTeam, setActiveTeam] = useState(null);
+  const [animPhase, setAnimPhase] = useState(() => {
+    if (initialPhase) return initialPhase;
+    return "form";
+  });
+  const [insertionProgress, setInsertionProgress] = useState(
+    initialPhase === "waiting" ? 100 : 0
+  );
+  const [activePlayer, setActivePlayer] = useState(initialPlayer || null);
+  const [activeTeam, setActiveTeam] = useState(initialTeam || null);
   const [waitingTime, setWaitingTime] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
+  const [upcomingSession, setUpcomingSession] = useState(null);
   const router = useRouter();
 
   // Live timer once settled in waiting lobby
@@ -111,9 +128,9 @@ export default function JoinGame({ lab = null }) {
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      playerName: "",
-      teamName: "",
-      lab: lab ? String(lab) : "1",
+      playerName: initialPlayer?.name || "",
+      teamName: initialTeam?.name || "",
+      lab: lab ? String(lab) : initialTeam?.lab ? String(initialTeam.lab) : "1",
     },
   });
 
@@ -121,22 +138,161 @@ export default function JoinGame({ lab = null }) {
   const watchedPlayer = watch("playerName");
   const watchedTeam = watch("teamName");
 
-  // Restore saved player data if user returns
+  const checkForUpcomingSession = useCallback(async (teamData) => {
+    if (IS_MOCK_MODE) {
+      setUpcomingSession(MOCK_UPCOMING_SESSION);
+      return;
+    }
+
+    const { data, error } = await whereLab(
+      supabase.from("quiz_sessions").select("*").eq("status", "scheduled"),
+      teamData.lab,
+    )
+      .order("start_time", { ascending: true })
+      .limit(1)
+      .single();
+
+    if (error) {
+      console.error("[WAITING] Error checking for upcoming session:", error);
+    } else if (data) {
+      setUpcomingSession(data);
+    }
+  }, []);
+
+  const checkSessionStatus = useCallback(
+    async (playerId, teamData) => {
+      if (IS_MOCK_MODE) {
+        return;
+      }
+
+      const { data: sessionData, error } = await whereLab(
+        supabase.from("quiz_sessions").select("*").eq("status", "active"),
+        teamData.lab,
+      )
+        .order("start_time", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        if (error.code === "PGRST116") {
+          // No active session, check for upcoming
+          await checkForUpcomingSession(teamData);
+        } else {
+          console.error("Error checking session status:", error);
+        }
+      } else if (sessionData) {
+        // There's an active session, check if player has already submitted
+        const { data: submissionData } = await supabase
+          .from("submissions")
+          .select("*")
+          .eq("player_id", playerId)
+          .eq("session_id", sessionData.id)
+          .limit(1)
+          .single();
+
+        if (submissionData) {
+          setMessage(
+            "You've completed the current session. Please wait for the next one."
+          );
+        } else {
+          // Player hasn't submitted for this session, redirect to game
+          try {
+            sessionStorage.setItem("inWaitingRoom", "true");
+          } catch (e) {}
+          router.push("/game");
+        }
+      }
+    },
+    [router, checkForUpcomingSession]
+  );
+
+  // Restore saved player data if user returns or initialize waiting lobby if in waiting room
   useEffect(() => {
     try {
-      const savedPlayer = localStorage.getItem("playerData");
-      const savedTeam = localStorage.getItem("teamData");
-      if (savedPlayer && savedTeam) {
-        const p = JSON.parse(savedPlayer);
-        const t = JSON.parse(savedTeam);
+      let savedPlayer = localStorage.getItem("playerData");
+      let savedTeam = localStorage.getItem("teamData");
+      let p = savedPlayer ? JSON.parse(savedPlayer) : null;
+      let t = savedTeam ? JSON.parse(savedTeam) : null;
+
+      const shouldBeInWaiting =
+        initialPhase === "waiting" ||
+        (typeof window !== "undefined" &&
+          (window.location.pathname === "/waiting" ||
+            sessionStorage.getItem("inWaitingRoom") === "true"));
+
+      if ((!p || !t) && IS_MOCK_MODE && shouldBeInWaiting) {
+        p = DEFAULT_MOCK_PLAYER;
+        t = DEFAULT_MOCK_TEAM;
+        localStorage.setItem("playerData", JSON.stringify(p));
+        localStorage.setItem("teamData", JSON.stringify(t));
+      }
+
+      if (p && t) {
+        setActivePlayer(p);
+        setActiveTeam(t);
         if (p?.name) setValue("playerName", p.name);
         if (t?.name) setValue("teamName", t.name);
         if (t?.lab) setValue("lab", String(t.lab));
+
+        if (shouldBeInWaiting) {
+          setAnimPhase("waiting");
+          setInsertionProgress(100);
+          try {
+            sessionStorage.setItem("inWaitingRoom", "true");
+          } catch (e) {}
+        }
+      } else if (shouldBeInWaiting && !IS_MOCK_MODE) {
+        // If on /waiting or marked as waiting room without any player data, restore form at /
+        setAnimPhase("form");
+        if (typeof window !== "undefined" && window.location.pathname !== "/") {
+          router.replace("/");
+        }
       }
     } catch (e) {
       // ignore
     }
-  }, [setValue]);
+  }, [setValue, initialPhase, router]);
+
+  // Real-time listener for active sessions while waiting
+  useEffect(() => {
+    if (animPhase !== "waiting" || !activePlayer || !activeTeam) return;
+
+    if (IS_MOCK_MODE) {
+      setUpcomingSession(MOCK_UPCOMING_SESSION);
+      return;
+    }
+
+    checkSessionStatus(activePlayer.id, activeTeam);
+
+    const subscription = supabase
+      .channel("quiz_sessions_lobby")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "quiz_sessions" },
+        (payload) => {
+          if (
+            payload.new?.status === "active" &&
+            activePlayer &&
+            activeTeam &&
+            payload.new?.lab === activeTeam.lab
+          ) {
+            checkSessionStatus(activePlayer.id, activeTeam);
+          }
+          if (
+            payload.new?.status === "scheduled" &&
+            activeTeam &&
+            payload.new?.lab === activeTeam.lab
+          ) {
+            setUpcomingSession(payload.new);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [animPhase, activePlayer, activeTeam, checkSessionStatus]);
 
   // ===========================================================================
   // FORWARD FLOW: FORM → TAPE → TRANSPARENT INSERTION → SHRINK → REVEAL LOBBY
@@ -196,6 +352,9 @@ export default function JoinGame({ lab = null }) {
     // Persist immediately in localStorage
     localStorage.setItem("playerData", JSON.stringify(targetPlayer));
     localStorage.setItem("teamData", JSON.stringify(targetTeam));
+    try {
+      sessionStorage.setItem("inWaitingRoom", "true");
+    } catch (e) {}
     setActivePlayer(targetPlayer);
     setActiveTeam(targetTeam);
 
@@ -254,6 +413,9 @@ export default function JoinGame({ lab = null }) {
   // ===========================================================================
   const handleEjectCassette = () => {
     setIsSubmitting(false);
+    try {
+      sessionStorage.removeItem("inWaitingRoom");
+    } catch (e) {}
 
     // Reverse Step 1: Retract waiting room dashboard elements around the 2D tape strip (0ms -> 650ms)
     setAnimPhase("retracting_dashboard");
@@ -291,10 +453,23 @@ export default function JoinGame({ lab = null }) {
     setTimeout(() => {
       setAnimPhase("form");
       setWaitingTime(0);
+      setActivePlayer(null);
+      setActiveTeam(null);
+      try {
+        sessionStorage.removeItem("inWaitingRoom");
+        localStorage.removeItem("playerData");
+        localStorage.removeItem("teamData");
+      } catch (e) {}
+      if (typeof window !== "undefined" && window.location.pathname !== "/") {
+        router.replace("/");
+      }
     }, 8100);
   };
 
   const handleStartGame = () => {
+    try {
+      sessionStorage.setItem("inWaitingRoom", "true");
+    } catch (e) {}
     router.push("/game");
   };
 
@@ -1466,6 +1641,11 @@ export default function JoinGame({ lab = null }) {
                     transition={{ duration: 0.55, ease: "easeOut" }}
                     className="w-full overflow-hidden space-y-3"
                   >
+                    {message && (
+                      <div className="mb-3 p-3 border-2 border-black bg-[#C1F8FF] text-xs font-mono font-bold text-center shadow-[2px_2px_0px_#101010] text-black">
+                        ℹ️ {message}
+                      </div>
+                    )}
                     <button
                       onClick={handleStartGame}
                       className="w-full bg-[#FFD12E] hover:bg-[#FFDA58] text-black font-syne font-black text-base py-3 px-4 border-2 border-black shadow-[4px_4px_0px_#101010] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_#101010] transition-all uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"

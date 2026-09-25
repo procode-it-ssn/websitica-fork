@@ -30,6 +30,9 @@ export default function PlayerGamePage() {
   }, [router]);
 
   const handleGameEnd = () => {
+    try {
+      sessionStorage.setItem("inWaitingRoom", "true");
+    } catch (e) {}
     router.push("/waiting");
   };
 
